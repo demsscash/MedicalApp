@@ -1,15 +1,153 @@
-import { Text, View } from "react-native";
+import React from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StatusBar,
+  Dimensions,
+  StyleSheet,
+  ImageBackground
+} from 'react-native';
+import { useRouter } from 'expo-router';
 
-export default function Index() {
+// Dimensions pour le dimensionnement réactif
+const { width, height } = Dimensions.get('window');
+const cardSize = Math.min(width * 0.35, height * 0.35);
+
+export default function HomeScreen() {
+  const router = useRouter();
+
+
+  const handleAccueil = () => {
+
+    router.push('/code-entry');
+  };
+
+  const handlePaiement = () => {
+
+  };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Hello world</Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+      {/* Arrière-plan avec vagues */}
+      <View style={styles.backgroundContainer}>
+        <Image
+          source={require('../assets/images/background.png')}
+          style={styles.leftWave}
+          resizeMode="cover"
+        />
+
+        <Image
+          source={require('../assets/images/background2.jpeg')}
+
+          style={styles.rightWave}
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Contenu principal */}
+      <View style={styles.contentContainer}>
+        {/* Bouton Accueil */}
+        <TouchableOpacity
+          onPress={handleAccueil}
+          activeOpacity={0.7}
+
+          style={[styles.card, { width: cardSize, height: cardSize }]}
+        >
+          <Image
+            source={require('../assets/images/home-icon.png')}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+          <Text style={styles.buttonText}>
+            Accueil
+          </Text>
+        </TouchableOpacity>
+
+        {/* Bouton Paiement */}
+        <TouchableOpacity
+          onPress={handlePaiement}
+          activeOpacity={0.7}
+          style={[styles.card, { width: cardSize, height: cardSize }]}
+        >
+          <Image
+            source={require('../assets/images/payment-icon.png')}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+          <Text style={styles.buttonText}>
+            Paiement
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F0F5FF',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    width: width,
+    height: height,
+    overflow: 'hidden',
+  },
+  leftWave: {
+    position: 'absolute',
+    left: -width * 0.3,
+    top: -height * 0.3,
+    width: width * 1.5,
+    height: height * 1.5,
+    transform: [{ rotate: '-180deg' }],
+    opacity: 0.1,
+  },
+  rightWave: {
+    position: 'absolute',
+    right: -width * 0.3,
+    bottom: -height * 0.3,
+    width: width * 1.5,
+    height: height * 1.5,
+    transform: [{ rotate: '180' }],
+    opacity: 0.1,
+  },
+  contentContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  card: {
+    backgroundColor: 'white',
+
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+
+  },
+  icon: {
+    width: 64,
+    height: 64,
+  },
+  buttonText: {
+    fontSize: 24,
+    fontWeight: '500',
+    color: '#4169E1',
+    marginTop: 20,
+  },
+});
