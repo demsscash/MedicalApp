@@ -3,9 +3,9 @@
     "name": "MedicalApp",
     "slug": "MedicalApp",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "MedicalApp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
