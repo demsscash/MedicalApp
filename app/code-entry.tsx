@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+// app/code-entry.tsx
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,13 +8,13 @@ import {
     Keyboard,
     StatusBar,
     Image,
-    StyleSheet,
-    Dimensions
+    Alert
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function CodeValidationScreen() {
     const router = useRouter();
+    const { error } = useLocalSearchParams();
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const inputRefs = [
         useRef<TextInput>(null),
@@ -23,6 +24,15 @@ export default function CodeValidationScreen() {
         useRef<TextInput>(null),
         useRef<TextInput>(null)
     ];
+
+    // Gérer les erreurs de validation redirigées
+    useEffect(() => {
+        if (error === 'invalidCode') {
+            Alert.alert('Code invalide', 'Le code que vous avez saisi est incorrect. Veuillez réessayer.');
+        } else if (error === 'serverError') {
+            Alert.alert('Erreur de serveur', 'Une erreur s\'est produite. Veuillez réessayer plus tard.');
+        }
+    }, [error]);
 
     const handleCodeChange = (text: string, index: number) => {
         const newCode = [...code];
@@ -40,53 +50,55 @@ export default function CodeValidationScreen() {
     const handleValidation = () => {
         const fullCode = code.join('');
         if (fullCode.length === 6) {
-            // Logique de validation
-            console.log('Code de validation :', fullCode);
-            // Navigation vers l'écran suivant
-
+            // Navigation vers la page de vérification avec le code
+            router.push({
+                pathname: '/verification',
+                params: { code: fullCode }
+            });
         } else {
             Keyboard.dismiss();
+            Alert.alert('Code incomplet', 'Veuillez saisir un code à 6 chiffres.');
         }
     };
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1 bg-[#F0F5FF]">
             {/* Arrière-plan avec vagues */}
-            <View style={styles.backgroundContainer}>
+            <View className="absolute inset-0">
                 <Image
                     source={require('../assets/images/background.png')}
-                    style={styles.leftWave}
+                    className="absolute -left-1/3 -top-1/3 w-[150%] h-[150%] -rotate-180 opacity-10"
                     resizeMode="cover"
                 />
                 <Image
-                    source={require('../assets/images/background2.jpeg')}
-                    style={styles.rightWave}
+                    source={require('../assets/images/background2.png')}
+                    className="absolute -right-1/3 -bottom-1/3 w-[150%] h-[150%] rotate-180 opacity-10"
                     resizeMode="cover"
                 />
             </View>
 
             {/* Contenu de la page */}
-            <View style={styles.contentContainer}>
+            <View className="flex-1 justify-center items-center p-5 bg-transparent">
                 <StatusBar barStyle="dark-content" />
 
-                <Text style={styles.title}>
+                <Text className="text-2xl font-semibold text-[#333] mb-4 text-center">
                     Validation du rendez-vous
                 </Text>
 
-                <Text style={styles.subtitle}>
+                <Text className="text-sm text-[#666] mb-8 text-center px-5">
                     Pour toute autre information, adressez-vous au secrétariat
                 </Text>
 
-                <Text style={styles.instructionText}>
+                <Text className="text-lg text-[#333] mb-6">
                     Veuillez entrer votre code
                 </Text>
 
-                <View style={styles.inputContainer}>
+                <View className="flex-row justify-center items-center mb-8">
                     {code.map((digit, index) => (
                         <TextInput
                             key={index}
                             ref={inputRefs[index]}
-                            style={styles.input}
+                            className="w-20 h-20 bg-white rounded-xl mx-1 text-2xl text-center shadow"
                             keyboardType="number-pad"
                             maxLength={1}
                             value={digit}
@@ -97,19 +109,15 @@ export default function CodeValidationScreen() {
                 </View>
 
                 <TouchableOpacity
-                    style={[
-                        styles.validationButton,
-                        {
-                            backgroundColor: code.every(digit => digit !== '')
-                                ? '#4169E1'
-                                : '#D3D3D3'
-                        }
-                    ]}
+                    className={`w-64 h-14 rounded-full justify-center items-center ${code.every(digit => digit !== '')
+                        ? 'bg-[#4169E1]'
+                        : 'bg-[#D3D3D3]'
+                        }`}
                     onPress={handleValidation}
                     disabled={code.some(digit => digit === '')}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.validationButtonText}>
+                    <Text className="text-white text-lg font-semibold">
                         Valider
                     </Text>
                 </TouchableOpacity>
@@ -117,95 +125,3 @@ export default function CodeValidationScreen() {
         </View>
     );
 }
-
-const { width, height } = Dimensions.get('window');
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F0F5FF',
-    },
-    backgroundContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
-    leftWave: {
-        position: 'absolute',
-        left: -width * 0.3,
-        top: -height * 0.3,
-        width: width * 1.5,
-        height: height * 1.5,
-        transform: [{ rotate: '-180deg' }],
-        opacity: 0.1,
-    },
-    rightWave: {
-        position: 'absolute',
-        right: -width * 0.3,
-        bottom: -height * 0.3,
-        width: width * 1.5,
-        height: height * 1.5,
-        transform: [{ rotate: '180' }],
-        opacity: 0.1,
-    },
-    contentContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: 'transparent',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 32,
-        textAlign: 'center',
-        paddingHorizontal: 20,
-    },
-    instructionText: {
-        fontSize: 18,
-        color: '#333',
-        marginBottom: 24,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    input: {
-        width: 80,
-        height: 86,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        marginHorizontal: 4,
-        fontSize: 24,
-        textAlign: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    validationButton: {
-        width: 250,
-        height: 56,
-        borderRadius: 28,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    validationButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-});
