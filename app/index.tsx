@@ -30,14 +30,14 @@ export default function HomeScreen() {
       {/* Arrière-plan avec vagues */}
       <View className="absolute w-full h-full overflow-hidden">
         <Image
-          source={require('../assets/images/background.png')}
-          className="absolute -left-1/3 -top-1/3 w-[150%] h-[150%] -rotate-180 opacity-10"
+          source={require('../assets/images/background2.jpeg')}
+          className="absolute -left-1/3 -top-1/3 w-[150%] h-[150%] top--650 -rotate--105 opacity-10"
           resizeMode="cover"
         />
 
         <Image
-          source={require('../assets/images/background2.png')}
-          className="absolute -right-1/3 -bottom-1/3 w-[150%] h-[150%] rotate-180 opacity-10"
+          source={require('../assets/images/background2.jpeg')}
+          className="absolute -right-1/3 -bottom-1/3 w-[150%] h-[150%] rotate--105 opacity-10"
           resizeMode="cover"
         />
       </View>
