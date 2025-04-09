@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 type PaymentInfo = {
     consultation: string;
@@ -9,6 +10,8 @@ type PaymentInfo = {
     mutuelle: string;
     mutuelleAmount: string;
     totalTTC: string;
+    regimeObligatoire: string
+    regimeObligatoireValue: string
 };
 
 export default function PaymentConfirmationScreen() {
@@ -23,21 +26,18 @@ export default function PaymentConfirmationScreen() {
         consultationPrice: "30.00 euro",
         mutuelle: "Mutuelle Couverte",
         mutuelleAmount: "-20.00 euro",
-        totalTTC: "10.00 €"
+        totalTTC: "10.00 €",
+        regimeObligatoire: "Regime Obligatoire",
+        regimeObligatoireValue: "Data"
     };
 
     const handlePayment = () => {
-        setLoading(true);
-        // Simuler un processus de paiement
-        setTimeout(() => {
-            setLoading(false);
-            setPaymentComplete(true);
+        router.push('/tpe');
+    };
 
-            // Afficher la confirmation pendant quelques secondes avant de retourner à l'accueil
-            setTimeout(() => {
-                router.push('/');
-            }, 3000);
-        }, 2000);
+    const handleReturn = () => {
+        // Retour à l'écran d'accueil
+        router.push('/');
     };
 
     return (
@@ -76,51 +76,102 @@ export default function PaymentConfirmationScreen() {
                         </Text>
                     </View>
                 ) : paymentComplete ? (
-                    <View className="items-center w-full max-w-md">
-                        <View className="w-12 h-12 bg-white rounded-full items-center justify-center mb-4">
-                            <Text className="text-[#4169E1] text-2xl">✓</Text>
+                    <View className="items-center w-full max-w-lg">
+                        {/* Icône et titre */}
+                        <View className="flex-row items-center mb-16">
+                            <View className="w-12 h-12 bg-white rounded-full items-center justify-center mr-4">
+                                <Ionicons name="checkmark" size={32} color="#4169E1" />
+                            </View>
+                            <Text className="text-2xl font-semibold text-[#4169E1]">
+                                Facture réglée
+                            </Text>
                         </View>
-                        <Text className="text-2xl font-semibold text-[#4169E1] mb-4">
-                            Facture réglée
-                        </Text>
 
-                        <Text className="text-lg text-gray-700 mb-2 text-center">
-                            Votre facture a été réglée avec succès
-                        </Text>
-                        <Text className="text-sm text-gray-500 mb-8 text-center">
-                            Un reçu vous sera envoyé par email
-                        </Text>
+                        {/* Informations du paiement */}
+                        <View className="w-full mb-4">
+                            <View className="bg-white rounded-xl p-4 items-center justify-center shadow">
+                                <Text className="text-base text-gray-800">
+                                    Paiement effectué
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View className="w-full mb-4">
+                            <View className="bg-white rounded-xl p-4 items-center justify-center shadow">
+                                <Text className="text-base text-gray-800">
+                                    Reçu envoyé par email
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View className="w-full mb-16">
+                            <View className="bg-white rounded-xl p-4 shadow">
+                                <Text className="text-base text-gray-800 text-center">
+                                    Montant total payé
+                                </Text>
+                                <Text className="text-xl font-semibold text-[#4169E1] text-center">
+                                    {paymentInfo.totalTTC}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Bouton de retour */}
+                        <TouchableOpacity
+                            onPress={handleReturn}
+                            activeOpacity={0.8}
+                            className="bg-white px-8 py-4 rounded-full shadow"
+                        >
+                            <Text className="text-[#4169E1] font-medium text-base">
+                                Retour à la page d'accueil
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     <View className="w-full max-w-md">
-                        <Text className="text-3xl text-[#4169E1] font-semibold text-center mb-12">
+                        {/* Titre */}
+                        <Text
+                            className="text-[38px] font-semibold text-[#4169E1] text-center mb-20"
+                            style={{
+                                fontFamily: 'Montserrat',
+                                fontWeight: '600',
+                                lineHeight: 40,
+                                letterSpacing: 0
+                            }}
+                        >
                             Facture
                         </Text>
 
                         {/* Détails de la facture */}
-                        <View className="mb-8">
-                            <View className="bg-white rounded-2xl p-4 mb-2 flex-row justify-between items-center shadow">
-                                <Text className="text-lg text-gray-800">{paymentInfo.consultation}</Text>
-                                <Text className="text-lg text-gray-800">{paymentInfo.consultationPrice}</Text>
+                        <View className="w-full mb-12">
+                            <View className="bg-white rounded-2xl p-5 mb-4 flex-row justify-between items-center shadow">
+                                <Text className="text-base text-gray-800">{paymentInfo.consultation}</Text>
+                                <Text className="text-base text-gray-800">{paymentInfo.consultationPrice}</Text>
                             </View>
 
-                            <View className="bg-white rounded-2xl p-4 mb-2 flex-row justify-between items-center shadow">
-                                <Text className="text-lg text-gray-800">{paymentInfo.mutuelle}</Text>
-                                <Text className="text-lg text-gray-800">{paymentInfo.mutuelleAmount}</Text>
+                            <View className="bg-white rounded-2xl p-5 mb-4 flex-row justify-between items-center shadow">
+                                <Text className="text-base text-gray-800">{paymentInfo.mutuelle}</Text>
+                                <Text className="text-base text-gray-800">{paymentInfo.mutuelleAmount}</Text>
+                            </View>
+                            <View className="bg-white rounded-2xl p-5 mb-4 flex-row justify-between items-center shadow">
+                                <Text className="text-base text-gray-800">{paymentInfo.regimeObligatoire}</Text>
+                                <Text className="text-base text-gray-800">{paymentInfo.regimeObligatoireValue}</Text>
                             </View>
 
-                            <View className="bg-white rounded-2xl p-4 flex-row justify-between items-center shadow">
-                                <Text className="text-lg font-bold text-gray-800">Total TTC</Text>
-                                <Text className="text-3xl font-bold text-[#4169E1]">{paymentInfo.totalTTC}</Text>
+                            <View className="bg-white rounded-2xl p-5 shadow">
+                                <View className="flex-row justify-between items-center">
+                                    <Text className="text-base font-medium text-gray-800">Total TTC</Text>
+                                    <Text className="text-3xl font-bold text-[#4169E1]">10.00 €</Text>
+                                </View>
                             </View>
                         </View>
 
                         {/* Bouton de paiement */}
                         <TouchableOpacity
                             onPress={handlePayment}
-                            className="bg-[#4169E1] py-4 px-8 rounded-full items-center shadow mx-auto"
+                            activeOpacity={0.8}
+                            className="bg-[#4169E1] px-8 py-4 rounded-full shadow mx-auto"
                         >
-                            <Text className="text-white text-lg font-semibold">
+                            <Text className="text-white font-medium text-base">
                                 Payer maintenant
                             </Text>
                         </TouchableOpacity>

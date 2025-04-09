@@ -50,7 +50,7 @@ export default function PaymentScreen() {
     const handleValidation = () => {
         const fullCode = code.join('');
         if (fullCode.length === 6) {
-            // Navigation vers la page de carte Vitale avec le code
+            // Navigation vers la page de paiement confirmé avec le code
             router.push({
                 pathname: '/carte-vitale',
                 params: { code: fullCode }
