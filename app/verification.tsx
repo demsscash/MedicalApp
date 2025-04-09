@@ -7,6 +7,8 @@ type PatientInfo = {
     nom: string;
     dateNaissance: string;
     dateRendezVous: string;
+    heureRendezVous: string;
+    numeroSecu: string;
     verified: boolean;
 };
 
@@ -30,6 +32,8 @@ export default function VerificationScreen() {
                         nom: 'Dupont Sophie',
                         dateNaissance: '24/01/1990',
                         dateRendezVous: '20/02/2025',
+                        heureRendezVous: '14:30',
+                        numeroSecu: '2 90 01 75 123 456 78',
                         verified: true
                     });
                 } else {
@@ -70,18 +74,28 @@ export default function VerificationScreen() {
 
     return (
         <View className="flex-1 bg-[#F0F5FF]">
-            {/* Arrière-plan avec vagues */}
-            <View className="absolute inset-0">
-                <Image
-                    source={require('../assets/images/background.png')}
-                    className="absolute -left-1/3 -top-1/3 w-[150%] h-[150%] -rotate-180 opacity-10"
-                    resizeMode="cover"
-                />
-                <Image
-                    source={require('../assets/images/background2.png')}
-                    className="absolute -right-1/3 -bottom-1/3 w-[150%] h-[150%] rotate-180 opacity-10"
-                    resizeMode="cover"
-                />
+            {/* Arrière-plan avec fusion de deux images */}
+            <View className="absolute inset-0 overflow-hidden">
+                <View className="flex-row w-full h-full">
+                    {/* Première image (gauche - 50% de la largeur) */}
+                    <View className="w-1/2 h-full">
+                        <Image
+                            source={require('../assets/images/bg-left-body.png')}
+                            className="absolute w-full h-full"
+                            resizeMode="cover"
+                        />
+                    </View>
+
+                    {/* Deuxième image (droite - 50% de la largeur) - alignée à droite */}
+                    <View className="w-1/2 h-full overflow-hidden">
+                        <Image
+                            source={require('../assets/images/bg-right-body.png')}
+                            className="absolute right-0 h-full"
+                            style={{ width: '200%', right: 0 }}
+                            resizeMode="cover"
+                        />
+                    </View>
+                </View>
             </View>
 
             {/* Contenu principal */}
@@ -113,6 +127,16 @@ export default function VerificationScreen() {
                             <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
                                 <Text className="text-base text-gray-600">Date de rendez-vous</Text>
                                 <Text className="text-lg font-medium">{patientInfo.dateRendezVous}</Text>
+                            </View>
+
+                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
+                                <Text className="text-base text-gray-600">Heure du rendez-vous</Text>
+                                <Text className="text-lg font-medium">{patientInfo.heureRendezVous}</Text>
+                            </View>
+
+                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
+                                <Text className="text-base text-gray-600">Numéro de sécurité sociale</Text>
+                                <Text className="text-lg font-medium">{patientInfo.numeroSecu}</Text>
                             </View>
                         </View>
                     )

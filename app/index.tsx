@@ -20,26 +20,35 @@ export default function HomeScreen() {
   };
 
   const handlePaiement = () => {
-    // Logique pour le paiement
+    router.push('/payment');
   };
 
   return (
     <View className="flex-1 bg-[#F0F5FF]">
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* Arrière-plan avec vagues */}
+      {/* Arrière-plan avec fusion de deux images */}
       <View className="absolute w-full h-full overflow-hidden">
-        <Image
-          source={require('../assets/images/background2.jpeg')}
-          className="absolute -left-1/3 -top-1/3 w-[150%] h-[150%] top--650 -rotate--105 opacity-10"
-          resizeMode="cover"
-        />
+        <View className="flex-row w-full h-full">
+          {/* Première image (gauche - 50% de la largeur) */}
+          <View className="w-1/2 h-full">
+            <Image
+              source={require('../assets/images/bg-left-body.png')}
+              className="absolute w-full h-full"
+              resizeMode="cover"
+            />
+          </View>
 
-        <Image
-          source={require('../assets/images/background2.jpeg')}
-          className="absolute -right-1/3 -bottom-1/3 w-[150%] h-[150%] rotate--105 opacity-10"
-          resizeMode="cover"
-        />
+          {/* Deuxième image (droite - 50% de la largeur) - alignée à droite */}
+          <View className="w-1/2 h-full overflow-hidden">
+            <Image
+              source={require('../assets/images/bg-right-body.png')}
+              className="absolute right-0 h-full"
+              style={{ width: '200%', right: 0 }}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
       </View>
 
       {/* Contenu principal */}
