@@ -1,116 +1,92 @@
 // app/payment-success.tsx
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    Image,
-    StatusBar,
-    ActivityIndicator,
-    Alert
-} from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import ScreenLayout from '../components/layout/ScreenLayout';
+import Button from '../components/ui/Button';
+import LoadingIndicator from '../components/ui/LoadingIndicator';
+import { Title, Paragraph } from '../components/ui/Typography';
+import { ROUTES } from '../constants/routes';
+import { printReceipt } from '../utils';
 
 export default function PaymentSuccessScreen() {
     const router = useRouter();
     const [printing, setPrinting] = useState(false);
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         // Simulate printing process
         setPrinting(true);
 
-        // Simulated printing logic
-        setTimeout(() => {
-            setPrinting(false);
+        try {
+            // Simulated printing logic
+            await printReceipt();
+
             Alert.alert(
                 'Impression terminée',
                 'Votre reçu et ordonnance ont été imprimés.',
                 [{
                     text: 'OK',
-                    onPress: () => router.push('/')
+                    onPress: () => router.push(ROUTES.HOME)
                 }]
             );
-        }, 3000);
+        } catch (error) {
+            console.error('Erreur lors de l\'impression:', error);
+            Alert.alert(
+                'Erreur d\'impression',
+                'Une erreur est survenue lors de l\'impression.',
+                [{
+                    text: 'OK',
+                    onPress: () => router.push(ROUTES.HOME)
+                }]
+            );
+        } finally {
+            setPrinting(false);
+        }
     };
 
     return (
-        <View className="flex-1 bg-[#F0F5FF]">
-            {/* Arrière-plan avec fusion de deux images */}
-            <View className="absolute inset-0 overflow-hidden">
-                <View className="flex-row w-full h-full">
-                    {/* Première image (gauche - 50% de la largeur) */}
-                    <View className="w-1/2 h-full">
-                        <Image
-                            source={require('../assets/images/bg-left-body.png')}
-                            className="absolute w-full h-full"
-                            resizeMode="cover"
-                        />
-                    </View>
-
-                    {/* Deuxième image (droite - 50% de la largeur) - alignée à droite */}
-                    <View className="w-1/2 h-full overflow-hidden">
-                        <Image
-                            source={require('../assets/images/bg-right-body.png')}
-                            className="absolute right-0 h-full"
-                            style={{ width: '200%', right: 0 }}
-                            resizeMode="cover"
-                        />
-                    </View>
-                </View>
+        <ScreenLayout>
+            {/* Checked circle */}
+            <View className="w-24 h-24 bg-white rounded-full justify-center items-center mb-8 shadow">
+                <Text className="text-[#4169E1] text-4xl">✓</Text>
             </View>
 
-            {/* Contenu principal */}
-            <View className="flex-1 justify-center items-center p-5">
-                <StatusBar barStyle="dark-content" />
+            {/* Success Title */}
+            <Title className="mb-4">
+                Paiement réussi !
+            </Title>
 
-                {/* Checked circle */}
-                <View className="w-24 h-24 bg-white rounded-full justify-center items-center mb-8 shadow">
-                    <Text className="text-[#4169E1] text-4xl">✓</Text>
+            {/* Success Message */}
+            <Paragraph className="text-lg text-gray-700 text-center mb-2">
+                Voulez-vous imprimer votre reçu
+            </Paragraph>
+            <Paragraph className="text-lg text-gray-700 text-center mb-8">
+                et votre ordonnance ?
+            </Paragraph>
+
+            {/* Print Button */}
+            {!printing ? (
+                <View className="flex-row space-x-4">
+                    <Button
+                        title="Imprimer"
+                        onPress={handlePrint}
+                        variant="secondary"
+                    />
+
+                    <Button
+                        title="Annuler"
+                        onPress={() => router.push(ROUTES.HOME)}
+                        variant="secondary"
+                    />
                 </View>
-
-                {/* Success Title */}
-                <Text className="text-3xl font-semibold text-[#4169E1] mb-4 text-center">
-                    Paiement réussi !
-                </Text>
-
-                {/* Success Message */}
-                <Text className="text-lg text-gray-700 text-center mb-2">
-                    Voulez-vous imprimer votre reçu
-                </Text>
-                <Text className="text-lg text-gray-700 text-center mb-8">
-                    et votre ordonnance ?
-                </Text>
-
-                {/* Print Button */}
-                {!printing ? (
-                    <View className="flex-row space-x-4">
-                        <TouchableOpacity
-                            onPress={handlePrint}
-                            className="bg-white px-8 py-4 rounded-full shadow"
-                        >
-                            <Text className="text-[#4169E1] text-lg font-semibold">
-                                Imprimer
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => router.push('/')}
-                            className="bg-white px-8 py-4 rounded-full shadow"
-                        >
-                            <Text className="text-[#4169E1] text-lg font-semibold">
-                                Annuler
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <View className="items-center">
-                        <ActivityIndicator size="large" color="#4169E1" />
-                        <Text className="text-lg text-gray-700 mt-4">
-                            Impression en cours...
-                        </Text>
-                    </View>
-                )}
-            </View>
-        </View>
+            ) : (
+                <View className="items-center">
+                    <LoadingIndicator size="large" />
+                    <Text className="text-lg text-gray-700 mt-4">
+                        Impression en cours...
+                    </Text>
+                </View>
+            )}
+        </ScreenLayout>
     );
 }

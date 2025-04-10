@@ -1,56 +1,25 @@
 // app/index.tsx
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StatusBar,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-
-type PressedButtonType = 'accueil' | 'paiement' | null;
+import ScreenLayout from '../components/layout/ScreenLayout';
+import { ROUTES } from '../constants/routes';
+import { PressedButtonType } from '../types';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [pressedButton, setPressedButton] = useState<PressedButtonType>(null);
 
   const handleAccueil = () => {
-    router.push('/code-entry');
+    router.push(ROUTES.CODE_ENTRY);
   };
 
   const handlePaiement = () => {
-    router.push('/payment');
+    router.push(ROUTES.PAYMENT);
   };
 
   return (
-    <View className="flex-1 bg-[#F0F5FF]">
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-
-      {/* Arrière-plan avec fusion de deux images */}
-      <View className="absolute w-full h-full overflow-hidden">
-        <View className="flex-row w-full h-full">
-          {/* Première image (gauche - 50% de la largeur) */}
-          <View className="w-1/2 h-full">
-            <Image
-              source={require('../assets/images/bg-left-body.png')}
-              className="absolute w-full h-full"
-              resizeMode="cover"
-            />
-          </View>
-
-          {/* Deuxième image (droite - 50% de la largeur) - alignée à droite */}
-          <View className="w-1/2 h-full overflow-hidden">
-            <Image
-              source={require('../assets/images/bg-right-body.png')}
-              className="absolute right-0 h-full"
-              style={{ width: '200%', right: 0 }}
-              resizeMode="cover"
-            />
-          </View>
-        </View>
-      </View>
-
+    <ScreenLayout centered withPadding={false}>
       {/* Contenu principal */}
       <View className="flex-1 flex-row justify-center items-center p-5">
         {/* Bouton Accueil */}
@@ -103,6 +72,6 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScreenLayout>
   );
 }

@@ -1,29 +1,19 @@
 // app/code-entry.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    Keyboard,
-    StatusBar,
-    Image,
-    Alert
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, Keyboard, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import ScreenLayout from '../components/layout/ScreenLayout';
+import CodeInput from '../components/ui/CodeInput';
+import Button from '../components/ui/Button';
+import { Heading, Paragraph, SubHeading } from '../components/ui/Typography';
+import { ROUTES } from '../constants/routes';
+import { DEFAULT_CODE_LENGTH } from '../constants/mockData';
+import useCodeInput from '../hooks/useCodeInput';
 
 export default function CodeValidationScreen() {
     const router = useRouter();
     const { error } = useLocalSearchParams();
-    const [code, setCode] = useState(['', '', '', '', '', '']);
-    const inputRefs = [
-        useRef<TextInput>(null),
-        useRef<TextInput>(null),
-        useRef<TextInput>(null),
-        useRef<TextInput>(null),
-        useRef<TextInput>(null),
-        useRef<TextInput>(null)
-    ];
+    const { code, isComplete, handleCodeChange, getFullCode } = useCodeInput(DEFAULT_CODE_LENGTH);
 
     // Gérer les erreurs de validation redirigées
     useEffect(() => {
@@ -34,25 +24,12 @@ export default function CodeValidationScreen() {
         }
     }, [error]);
 
-    const handleCodeChange = (text: string, index: number) => {
-        const newCode = [...code];
-        newCode[index] = text;
-        setCode(newCode);
-
-        // Gestion automatique du focus
-        if (text.length === 1 && index < 5) {
-            inputRefs[index + 1].current?.focus();
-        } else if (text.length === 0 && index > 0) {
-            inputRefs[index - 1].current?.focus();
-        }
-    };
-
     const handleValidation = () => {
-        const fullCode = code.join('');
-        if (fullCode.length === 6) {
+        const fullCode = getFullCode();
+        if (fullCode.length === DEFAULT_CODE_LENGTH) {
             // Navigation vers la page de vérification avec le code
             router.push({
-                pathname: '/verification',
+                pathname: ROUTES.VERIFICATION,
                 params: { code: fullCode }
             });
         } else {
@@ -62,76 +39,33 @@ export default function CodeValidationScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F0F5FF]">
-            {/* Arrière-plan avec fusion de deux images */}
-            <View className="absolute inset-0 overflow-hidden">
-                <View className="flex-row w-full h-full">
-                    {/* Première image (gauche - 50% de la largeur) */}
-                    <View className="w-1/2 h-full">
-                        <Image
-                            source={require('../assets/images/bg-left-body.png')}
-                            className="absolute w-full h-full"
-                            resizeMode="cover"
-                        />
-                    </View>
+        <ScreenLayout>
+            <Heading className="mb-4 text-center">
+                Validation du rendez-vous
+            </Heading>
 
-                    {/* Deuxième image (droite - 50% de la largeur) - alignée à droite */}
-                    <View className="w-1/2 h-full overflow-hidden">
-                        <Image
-                            source={require('../assets/images/bg-right-body.png')}
-                            className="absolute right-0 h-full"
-                            style={{ width: '200%', right: 0 }}
-                            resizeMode="cover"
-                        />
-                    </View>
-                </View>
-            </View>
+            <Paragraph className="mb-8 text-center px-5">
+                Pour toute autre information, adressez-vous au secrétariat
+            </Paragraph>
 
-            {/* Contenu de la page */}
-            <View className="flex-1 justify-center items-center p-5 bg-transparent">
-                <StatusBar barStyle="dark-content" />
+            <SubHeading className="mb-6">
+                Veuillez entrer votre code
+            </SubHeading>
 
-                <Text className="text-2xl font-semibold text-[#333] mb-4 text-center">
-                    Validation du rendez-vous
-                </Text>
+            <CodeInput
+                codeLength={DEFAULT_CODE_LENGTH}
+                value={code}
+                onChange={handleCodeChange}
+                containerClassName="mb-8"
+            />
 
-                <Text className="text-sm text-[#666] mb-8 text-center px-5">
-                    Pour toute autre information, adressez-vous au secrétariat
-                </Text>
-
-                <Text className="text-lg text-[#333] mb-6">
-                    Veuillez entrer votre code
-                </Text>
-
-                <View className="flex-row justify-center items-center mb-8">
-                    {code.map((digit, index) => (
-                        <TextInput
-                            key={index}
-                            ref={inputRefs[index]}
-                            className="w-20 h-20 bg-white rounded-xl mx-1 text-2xl text-center shadow"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            value={digit}
-                            onChangeText={(text) => handleCodeChange(text, index)}
-                            selectTextOnFocus={true}
-                        />
-                    ))}
-                </View>
-
-                <TouchableOpacity
-                    className={`w-64 h-14 rounded-full justify-center items-center ${code.every(digit => digit !== '')
-                        ? 'bg-[#4169E1]'
-                        : 'bg-[#D3D3D3]'
-                        }`}
-                    onPress={handleValidation}
-                    disabled={code.some(digit => digit === '')}
-                    activeOpacity={0.7}
-                >
-                    <Text className="text-white text-lg font-semibold">
-                        Valider
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+            <Button
+                title="Valider"
+                onPress={handleValidation}
+                variant="primary"
+                disabled={!isComplete}
+                className={`w-64 h-14 justify-center items-center`}
+            />
+        </ScreenLayout>
     );
 }

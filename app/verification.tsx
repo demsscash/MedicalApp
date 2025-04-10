@@ -1,16 +1,14 @@
 // app/verification.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Image } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
-type PatientInfo = {
-    nom: string;
-    dateNaissance: string;
-    dateRendezVous: string;
-    heureRendezVous: string;
-    numeroSecu: string;
-    verified: boolean;
-};
+import ScreenLayout from '../components/layout/ScreenLayout';
+import LoadingIndicator from '../components/ui/LoadingIndicator';
+import { InfoCard } from '../components/ui/Card';
+import { Heading } from '../components/ui/Typography';
+import { ROUTES } from '../constants/routes';
+import { verifyAppointmentCode } from '../utils';
+import { PatientInfo } from '../types';
 
 export default function VerificationScreen() {
     const router = useRouter();
@@ -23,25 +21,19 @@ export default function VerificationScreen() {
         // Cette fonction simule une vérification API
         const verifyCode = async () => {
             try {
-                // Simuler un délai de réseau
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const result = await verifyAppointmentCode(code as string);
 
-                // Simuler les données du patient (en production, cela proviendrait d'une API)
-                if (code === '123456') {
-                    setPatientInfo({
-                        nom: 'Dupont Sophie',
-                        dateNaissance: '24/01/1990',
-                        dateRendezVous: '20/02/2025',
-                        heureRendezVous: '14:30',
-                        numeroSecu: '2 90 01 75 123 456 78',
-                        verified: true
-                    });
+                if (result) {
+                    setPatientInfo(result);
                 } else {
                     // Code invalide
                     setPatientInfo(null);
                     // Rediriger en cas d'échec après un court délai
                     setTimeout(() => {
-                        router.push('/code-entry?error=invalidCode');
+                        router.push({
+                            pathname: ROUTES.CODE_ENTRY,
+                            params: { error: 'invalidCode' }
+                        });
                     }, 1000);
                 }
 
@@ -50,7 +42,10 @@ export default function VerificationScreen() {
                 console.error('Erreur lors de la vérification :', error);
                 setLoading(false);
                 // Rediriger en cas d'erreur
-                router.push('/code-entry?error=serverError');
+                router.push({
+                    pathname: ROUTES.CODE_ENTRY,
+                    params: { error: 'serverError' }
+                });
             }
         };
 
@@ -63,7 +58,7 @@ export default function VerificationScreen() {
             // Timer avant de passer à l'écran suivant (pour que l'utilisateur puisse voir les informations)
             const timer = setTimeout(() => {
                 router.push({
-                    pathname: '/appointment-confirmed',
+                    pathname: ROUTES.APPOINTMENT_CONFIRMED,
                     params: { name: patientInfo.nom }
                 });
             }, 3000);
@@ -73,75 +68,24 @@ export default function VerificationScreen() {
     }, [patientInfo, loading, router]);
 
     return (
-        <View className="flex-1 bg-[#F0F5FF]">
-            {/* Arrière-plan avec fusion de deux images */}
-            <View className="absolute inset-0 overflow-hidden">
-                <View className="flex-row w-full h-full">
-                    {/* Première image (gauche - 50% de la largeur) */}
-                    <View className="w-1/2 h-full">
-                        <Image
-                            source={require('../assets/images/bg-left-body.png')}
-                            className="absolute w-full h-full"
-                            resizeMode="cover"
-                        />
-                    </View>
-
-                    {/* Deuxième image (droite - 50% de la largeur) - alignée à droite */}
-                    <View className="w-1/2 h-full overflow-hidden">
-                        <Image
-                            source={require('../assets/images/bg-right-body.png')}
-                            className="absolute right-0 h-full"
-                            style={{ width: '200%', right: 0 }}
-                            resizeMode="cover"
-                        />
-                    </View>
-                </View>
-            </View>
-
-            {/* Contenu principal */}
-            <View className="flex-1 justify-center items-center p-5">
-                {loading ? (
-                    <View className="items-center">
-                        <ActivityIndicator size="large" color="#4169E1" className="mb-6" />
-                        <Text className="text-2xl text-[#4169E1] font-semibold text-center">
+        <ScreenLayout>
+            {loading ? (
+                <LoadingIndicator text="Vérification en cours..." />
+            ) : (
+                patientInfo && (
+                    <View className="w-full max-w-md">
+                        <Heading className="text-center mb-8">
                             Vérification en cours...
-                        </Text>
+                        </Heading>
+
+                        <InfoCard label="Nom et prénom" value={patientInfo.nom} />
+                        <InfoCard label="Date de naissance" value={patientInfo.dateNaissance} />
+                        <InfoCard label="Date de rendez-vous" value={patientInfo.dateRendezVous} />
+                        <InfoCard label="Heure du rendez-vous" value={patientInfo.heureRendezVous} />
+                        <InfoCard label="Numéro de sécurité sociale" value={patientInfo.numeroSecu} />
                     </View>
-                ) : (
-                    patientInfo && (
-                        <View className="w-full max-w-md">
-                            <Text className="text-2xl text-[#4169E1] font-semibold text-center mb-8">
-                                Vérification en cours...
-                            </Text>
-
-                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
-                                <Text className="text-base text-gray-600">Nom et prénom</Text>
-                                <Text className="text-lg font-medium">{patientInfo.nom}</Text>
-                            </View>
-
-                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
-                                <Text className="text-base text-gray-600">Date de naissance</Text>
-                                <Text className="text-lg font-medium">{patientInfo.dateNaissance}</Text>
-                            </View>
-
-                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
-                                <Text className="text-base text-gray-600">Date de rendez-vous</Text>
-                                <Text className="text-lg font-medium">{patientInfo.dateRendezVous}</Text>
-                            </View>
-
-                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
-                                <Text className="text-base text-gray-600">Heure du rendez-vous</Text>
-                                <Text className="text-lg font-medium">{patientInfo.heureRendezVous}</Text>
-                            </View>
-
-                            <View className="bg-white rounded-xl p-4 mb-4 flex-row justify-between items-center shadow">
-                                <Text className="text-base text-gray-600">Numéro de sécurité sociale</Text>
-                                <Text className="text-lg font-medium">{patientInfo.numeroSecu}</Text>
-                            </View>
-                        </View>
-                    )
-                )}
-            </View>
-        </View>
+                )
+            )}
+        </ScreenLayout>
     );
 }
