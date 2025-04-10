@@ -53,7 +53,7 @@ export default function PaymentSuccessScreen() {
     };
 
     // Fonction pour gérer l'impression
-    const handlePrint = async (type) => {
+    const handlePrint = async (type: string) => {
         // Mettre en mode impression (ce qui arrête le timer)
         setPrinting(true);
 
