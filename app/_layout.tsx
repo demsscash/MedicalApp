@@ -4,7 +4,7 @@ import './globals.css';
 export default function RootLayout() {
   return (<Stack
     screenOptions={{
-      headerShown: false, // 👈 désactive tous les headers
+      headerShown: true, // 👈 désactive tous les headers
     }}
   />);
 }
