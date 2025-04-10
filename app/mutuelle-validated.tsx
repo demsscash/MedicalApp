@@ -1,60 +1,62 @@
-// app/carte-vitale-validated.tsx
+// app/mutuelle-validated.tsx
 import React, { useEffect } from 'react';
 import { View, Image, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
-import { Heading } from '../components/ui/Typography';
+import { Title } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 
-export default function CarteVitaleValidatedScreen() {
+export default function MutuelleValidatedScreen() {
     const router = useRouter();
     const { code } = useLocalSearchParams();
 
     // Redirection automatique après un délai
     useEffect(() => {
         const timer = setTimeout(() => {
-            // Après le délai, naviguer vers la page de scan de mutuelle
+            // Après le délai, naviguer vers la page de confirmation de paiement
             router.push({
-                pathname: ROUTES.MUTUELLE_SCAN,
+                pathname: ROUTES.PAYMENT_CONFIRMATION,
                 params: { code: code }
             });
-        }, 3000);
+        }, 5000);
 
         return () => clearTimeout(timer);
     }, [code, router]);
 
     const handleNext = () => {
-        // Si l'utilisateur clique sur Suivant, on va directement au scan de mutuelle
+        // Si l'utilisateur clique sur Suivant, on va directement à la confirmation
         router.push({
-            pathname: ROUTES.MUTUELLE_SCAN,
+            pathname: ROUTES.PAYMENT_CONFIRMATION,
             params: { code: code }
         });
     };
 
     return (
         <ScreenLayout>
-            <Heading className="mb-12 text-center">
-                Merci d'insérer votre{"\n"}carte vitale
-            </Heading>
+            <Title className="mb-6 text-center text-[#4169E1] p-8">
+                Scannez votre{"\n"}mutuelle
+            </Title>
 
-            {/* Image de la carte Vitale avec badge de validation superposé */}
+            {/* Carte mutuelle avec badge de validation superposé */}
             <View className="mb-16 relative">
-                <Image
-                    source={require('../assets/images/vitale.png')}
-                    className="w-64 h-80"
-                    resizeMode="contain"
-                />
+                <View className="w-60 h-60 bg-white rounded-3xl items-center justify-center shadow">
+                    <Image
+                        source={require('../assets/images/Rectangle.png')}
+                        className="w-48 h-48"
+                        resizeMode="contain"
+                    />
+                </View>
 
                 {/* Badge de validation - position fixe */}
                 <View style={{
                     position: 'absolute',
                     top: 10,
                     right: 10,
-                    width: 113,
-                    height: 113,
-                    borderRadius: 56.5,
-                    backgroundColor: 'rgba(240, 245, 255, 0.8)',
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    backgroundColor: 'rgba(240, 245, 255, 0.9)',
                     justifyContent: 'center',
                     alignItems: 'center',
                     shadowColor: "#000",

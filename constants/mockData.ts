@@ -16,10 +16,10 @@ export const MOCK_PAYMENT_DATA = {
         consultation: "Consultation médicale",
         consultationPrice: "30.00 euro",
         mutuelle: "Mutuelle Couverte",
-        mutuelleAmount: "-20.00 euro",
+        mutuelleAmount: "-18.00 euro",
         totalTTC: "10.00 €",
         regimeObligatoire: "Regime Obligatoire",
-        regimeObligatoireValue: "Data"
+        regimeObligatoireValue: "-6 euro",
     },
     // Ajoutez d'autres paiements simulés ici
 };

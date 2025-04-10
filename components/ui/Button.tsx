@@ -1,6 +1,6 @@
 // components/ui/Button.tsx
-import React from 'react';
-import { Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { Text, TouchableOpacity, ActivityIndicator, Pressable } from 'react-native';
 import { COLORS } from '../../constants/theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline';
@@ -24,9 +24,16 @@ export const Button: React.FC<ButtonProps> = ({
     className = '',
     textClassName = '',
 }) => {
-    // Styles basés sur la variante
+    const [isPressed, setIsPressed] = useState(false);
+
+    // Styles basés sur la variante et l'état
     const getButtonClass = () => {
         if (disabled) return 'bg-[#D3D3D3] px-8 py-4 rounded-full shadow';
+
+        // Si le bouton est pressé, appliquer le style bleu quel que soit le variant
+        if (isPressed) {
+            return 'bg-[#4169E1] px-8 py-4 rounded-full shadow';
+        }
 
         switch (variant) {
             case 'primary':
@@ -42,6 +49,11 @@ export const Button: React.FC<ButtonProps> = ({
 
     const getTextClass = () => {
         if (disabled) return 'text-white font-medium text-base';
+
+        // Si le bouton est pressé, toujours utiliser le texte blanc
+        if (isPressed) {
+            return 'text-white font-medium text-base';
+        }
 
         switch (variant) {
             case 'primary':
@@ -59,8 +71,10 @@ export const Button: React.FC<ButtonProps> = ({
         <TouchableOpacity
             onPress={onPress}
             disabled={disabled || loading}
-            activeOpacity={0.7}
+            activeOpacity={0.9}
             className={`${getButtonClass()} ${className}`}
+            onPressIn={() => setIsPressed(true)}
+            onPressOut={() => setIsPressed(false)}
         >
             {loading ? (
                 <ActivityIndicator size="small" color={variant === 'primary' ? COLORS.white : COLORS.primary} />

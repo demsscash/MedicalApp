@@ -80,9 +80,10 @@ export default function VerificationScreen() {
 
                         <InfoCard label="Nom et prénom" value={patientInfo.nom} />
                         <InfoCard label="Date de naissance" value={patientInfo.dateNaissance} />
+                        <InfoCard label="Numéro de sécurité sociale" value={patientInfo.numeroSecu} />
                         <InfoCard label="Date de rendez-vous" value={patientInfo.dateRendezVous} />
                         <InfoCard label="Heure du rendez-vous" value={patientInfo.heureRendezVous} />
-                        <InfoCard label="Numéro de sécurité sociale" value={patientInfo.numeroSecu} />
+
                     </View>
                 )
             )}

@@ -35,9 +35,9 @@ export default function CarteVitaleScreen() {
     };
 
     const handleNoCarte = () => {
-        // Naviguer directement vers la page de confirmation de paiement sans carte Vitale
+        // Naviguer vers la page de scan de mutuelle même sans carte Vitale
         router.push({
-            pathname: ROUTES.PAYMENT_CONFIRMATION,
+            pathname: ROUTES.MUTUELLE_SCAN,
             params: { code: code }
         });
     };
@@ -73,7 +73,6 @@ export default function CarteVitaleScreen() {
                 title="Je n'ai pas de carte Vitale"
                 onPress={handleNoCarte}
                 variant="secondary"
-                disabled={loading}
             />
         </ScreenLayout>
     );

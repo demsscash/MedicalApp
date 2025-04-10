@@ -1,6 +1,5 @@
-// components/ui/CodeInput.tsx
 import React, { useRef, useEffect } from 'react';
-import { View, TextInput } from 'react-native';
+import { View, TextInput, Keyboard } from 'react-native';
 
 type CodeInputProps = {
     codeLength: number;
@@ -21,11 +20,8 @@ export const CodeInput: React.FC<CodeInputProps> = ({
         .fill(0)
         .map(() => useRef<TextInput>(null));
 
-    // Focus d'entrée sur le premier input
     useEffect(() => {
-        if (inputRefs.length > 0) {
-            inputRefs[0].current?.focus();
-        }
+        inputRefs[0]?.current?.focus();
     }, []);
 
     const handleCodeChange = (text: string, index: number) => {
@@ -33,11 +29,17 @@ export const CodeInput: React.FC<CodeInputProps> = ({
         newCode[index] = text;
         onChange(newCode);
 
-        // Gestion automatique du focus
+        // Auto-focus suivant
         if (text.length === 1 && index < codeLength - 1) {
             inputRefs[index + 1].current?.focus();
         } else if (text.length === 0 && index > 0) {
             inputRefs[index - 1].current?.focus();
+        }
+
+        // Fermer clavier si tout est rempli
+        const completed = newCode.every((digit) => digit.length === 1);
+        if (completed) {
+            Keyboard.dismiss();
         }
     };
 
