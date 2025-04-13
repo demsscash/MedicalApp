@@ -10,6 +10,7 @@ import { ROUTES } from '../constants/routes';
 import { ApiService } from '../services/api';
 import { PatientInfo } from '../types';
 import { MOCK_PATIENT_DATA, VALID_CODES } from '../constants/mockData';
+import ErrorModal from '../components/ui/ErrorModal';
 
 export default function VerificationScreen() {
     const router = useRouter();
@@ -17,6 +18,11 @@ export default function VerificationScreen() {
     const [loading, setLoading] = useState(true);
     const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
     const [appointmentId, setAppointmentId] = useState<number | null>(null);
+
+    // États pour le modal d'erreur
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [errorTitle, setErrorTitle] = useState('');
 
     // Fonction locale pour simuler la vérification du code
     const mockVerifyAppointmentCode = async (code: string): Promise<PatientInfo | null> => {
@@ -29,6 +35,12 @@ export default function VerificationScreen() {
         }
 
         return null;
+    };
+
+    // Fermeture du modal et redirection
+    const handleCloseErrorModal = () => {
+        setErrorModalVisible(false);
+        router.push(ROUTES.CODE_ENTRY);
     };
 
     // Vérification du code de rendez-vous
@@ -54,27 +66,21 @@ export default function VerificationScreen() {
 
                 if (result) {
                     setPatientInfo(result);
+                    setLoading(false);
                 } else {
-                    // Code invalide
-                    setPatientInfo(null);
-                    // Rediriger en cas d'échec après un court délai
-                    setTimeout(() => {
-                        router.push({
-                            pathname: ROUTES.CODE_ENTRY,
-                            params: { error: 'invalidCode' }
-                        });
-                    }, 1000);
+                    // Code invalide - Afficher le modal d'erreur
+                    setLoading(false);
+                    setErrorTitle('Code invalide');
+                    setErrorMessage('Le code que vous avez saisi ne correspond à aucun rendez-vous dans notre système.');
+                    setErrorModalVisible(true);
                 }
-
-                setLoading(false);
             } catch (error) {
                 console.error('Erreur lors de la vérification :', error);
                 setLoading(false);
-                // Rediriger en cas d'erreur
-                router.push({
-                    pathname: ROUTES.CODE_ENTRY,
-                    params: { error: 'serverError' }
-                });
+                // Afficher le modal d'erreur serveur
+                setErrorTitle('Erreur de serveur');
+                setErrorMessage('Une erreur s\'est produite lors de la vérification. Veuillez réessayer plus tard ou contacter le secrétariat.');
+                setErrorModalVisible(true);
             }
         };
 
@@ -125,6 +131,14 @@ export default function VerificationScreen() {
                     </View>
                 )
             )}
+
+            {/* Modal d'erreur */}
+            <ErrorModal
+                visible={errorModalVisible}
+                title={errorTitle}
+                message={errorMessage}
+                onClose={handleCloseErrorModal}
+            />
         </ScreenLayout>
     );
 }

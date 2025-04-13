@@ -1,10 +1,11 @@
 // app/code-entry.tsx
-import React, { useEffect } from 'react';
-import { View, Text, Keyboard, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Keyboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import CodeInput from '../components/ui/CodeInput';
 import Button from '../components/ui/Button';
+import ErrorModal from '../components/ui/ErrorModal';
 import { Heading, Paragraph, SubHeading } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 import { DEFAULT_CODE_LENGTH } from '../constants/mockData';
@@ -14,13 +15,20 @@ export default function CodeValidationScreen() {
     const router = useRouter();
     const { error } = useLocalSearchParams();
     const { code, isComplete, handleCodeChange, getFullCode } = useCodeInput(DEFAULT_CODE_LENGTH);
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [errorTitle, setErrorTitle] = useState('');
 
     // Gérer les erreurs de validation redirigées
     useEffect(() => {
         if (error === 'invalidCode') {
-            Alert.alert('Code invalide', 'Le code que vous avez saisi est incorrect. Veuillez réessayer.');
+            setErrorTitle('Code invalide');
+            setErrorMessage('Le code que vous avez saisi est incorrect. Veuillez réessayer.');
+            setErrorModalVisible(true);
         } else if (error === 'serverError') {
-            Alert.alert('Erreur de serveur', 'Une erreur s\'est produite. Veuillez réessayer plus tard.');
+            setErrorTitle('Erreur de serveur');
+            setErrorMessage('Une erreur s\'est produite. Veuillez réessayer plus tard ou contacter le secrétariat.');
+            setErrorModalVisible(true);
         }
     }, [error]);
 
@@ -34,8 +42,14 @@ export default function CodeValidationScreen() {
             });
         } else {
             Keyboard.dismiss();
-            Alert.alert('Code incomplet', 'Veuillez saisir un code à 6 chiffres.');
+            setErrorTitle('Code incomplet');
+            setErrorMessage('Veuillez saisir un code à 6 chiffres.');
+            setErrorModalVisible(true);
         }
+    };
+
+    const closeErrorModal = () => {
+        setErrorModalVisible(false);
     };
 
     return (
@@ -65,6 +79,14 @@ export default function CodeValidationScreen() {
                 variant="primary"
                 disabled={!isComplete}
                 className={`w-64 h-14 justify-center items-center`}
+            />
+
+            {/* Modal d'erreur */}
+            <ErrorModal
+                visible={errorModalVisible}
+                title={errorTitle}
+                message={errorMessage}
+                onClose={closeErrorModal}
             />
         </ScreenLayout>
     );
