@@ -1,7 +1,8 @@
+// types/index.ts
 import { TextInput } from "react-native";
 
-// types/index.ts
 export type PatientInfo = {
+    id?: number; // ID du rendez-vous pour la confirmation
     nom: string;
     dateNaissance: string;
     dateRendezVous: string;
