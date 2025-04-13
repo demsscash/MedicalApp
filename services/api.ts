@@ -13,7 +13,7 @@ const API_CONFIG = {
     },
     endpoints: {
         VALIDATE_CODE: '/kiosk/validate',
-        CONFIRM_APPOINTMENT: '/kiosk/confirm',
+        GET_APPOINTMENT: '/kiosk/appointment',  // Endpoint de base pour obtenir un rendez-vous
         PAYMENT_VERIFY: '/kiosk/payment/verify',
         PAYMENT_PROCESS: '/kiosk/payment/process'
     }
@@ -55,12 +55,13 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
  */
 export const ApiService = {
     /**
-     * Vérifie un code de rendez-vous et récupère les informations de l'appointment
+     * Vérifie si un code de rendez-vous est valide
      * @param code Code à 6 chiffres du rendez-vous
-     * @returns Informations du patient si le code est valide, sinon null
+     * @returns L'ID du rendez-vous si le code est valide, sinon null
      */
-    async verifyAppointmentCode(code: string): Promise<PatientInfo | null> {
+    async verifyAppointmentCode(code: string): Promise<number | null> {
         try {
+            // Vérifier le code
             const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.VALIDATE_CODE}`, {
                 method: 'POST',
                 headers: {
@@ -76,25 +77,8 @@ export const ApiService = {
                 return null;
             }
 
-            // Extraire la date et l'heure du format "2025-04-14 14:19:00"
-            const dateTime = data.appointment.date.split(' ');
-            const dateStr = dateTime[0].split('-').reverse().join('/'); // Convertir YYYY-MM-DD en DD/MM/YYYY
-            const timeStr = dateTime[1].substring(0, 5); // Extraire HH:MM
-
-            // Formater le n° de sécu (simulation car non fourni par l'API)
-            const randomSecu = Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
-            const formattedSecu = `${randomSecu.substring(0, 1)} ${randomSecu.substring(1, 3)} ${randomSecu.substring(3, 5)} ${randomSecu.substring(5, 7)} ${randomSecu.substring(7, 10)} ${randomSecu.substring(10, 13)} ${randomSecu.substring(13, 15)}`;
-
-            // Mapper les données de l'API vers le format attendu par l'application
-            return {
-                id: data.appointment.id,
-                nom: data.appointment.patientName,
-                dateNaissance: "01/01/1990", // Non fourni par l'API, valeur par défaut
-                dateRendezVous: dateStr,
-                heureRendezVous: timeStr,
-                numeroSecu: formattedSecu,
-                verified: true
-            };
+            // Renvoyer uniquement l'ID du rendez-vous
+            return data.appointment.id || null;
         } catch (error) {
             console.error('Erreur lors de la vérification du code:', error);
             throw error;
@@ -102,28 +86,59 @@ export const ApiService = {
     },
 
     /**
-     * Confirme la présence du patient au rendez-vous
+     * Récupère les données de rendez-vous complètes par ID
      * @param appointmentId ID du rendez-vous
-     * @returns true si la confirmation est réussie, sinon false
+     * @returns Informations détaillées du rendez-vous incluant prix et couverture
      */
-    async confirmAppointment(appointmentId: number): Promise<boolean> {
+    async getAppointmentById(code: string): Promise<PatientInfo | null> {
         try {
-            const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.CONFIRM_APPOINTMENT}`, {
-                method: 'POST',
+            // URL correcte avec l'ID du rendez-vous directement dans le chemin
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${code}`;
+            console.log(`Appelant l'API avec l'URL: ${url}`);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'GET',
                 headers: {
                     ...API_CONFIG.headers,
                 },
-                body: JSON.stringify({
-                    id: appointmentId,
-                    status: "confirmed",
-                    confirmationTime: new Date().toISOString()
-                }),
             });
 
-            const data = await response.json();
-            return data && data.message && data.message.includes("successfully");
+            const appointmentDetails = await response.json();
+
+            if (!appointmentDetails) {
+                return null;
+            }
+
+            // Formater la date et l'heure si disponibles
+            let dateStr = "01/01/2025";
+            let timeStr = "00:00";
+
+            if (appointmentDetails.date) {
+                const dateTime = appointmentDetails.date.split(' ');
+                dateStr = dateTime[0].split('-').reverse().join('/'); // Convertir YYYY-MM-DD en DD/MM/YYYY
+                timeStr = dateTime[1]?.substring(0, 5) || "00:00"; // Extraire HH:MM
+            }
+
+            // Formater le n° de sécu (simulation car non fourni par l'API)
+            const randomSecu = Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
+            const formattedSecu = `${randomSecu.substring(0, 1)} ${randomSecu.substring(1, 3)} ${randomSecu.substring(3, 5)} ${randomSecu.substring(5, 7)} ${randomSecu.substring(7, 10)} ${randomSecu.substring(10, 13)} ${randomSecu.substring(13, 15)}`;
+
+            // Mapper les données de l'API vers le format attendu par l'application
+            return {
+
+                nom: appointmentDetails.patientName || "Patient",
+                dateNaissance: "01/01/1990", // Non fourni par l'API, valeur par défaut
+                dateRendezVous: dateStr,
+                heureRendezVous: timeStr,
+                numeroSecu: formattedSecu,
+                verified: true,
+                // Données financières
+                price: appointmentDetails.price || 0,
+                couverture: appointmentDetails.couverture || 0,
+                status: appointmentDetails.status || "validated"
+            };
         } catch (error) {
-            console.error('Erreur lors de la confirmation du rendez-vous:', error);
+            console.error('Erreur lors de la récupération des détails du rendez-vous:', error);
             throw error;
         }
     },

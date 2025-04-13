@@ -10,9 +10,9 @@ import { MOCK_PATIENT_DATA, MOCK_PAYMENT_DATA, VALID_CODES } from '../constants/
 export const useAppState = () => {
     // États pour le flux de rendez-vous
     const [appointmentCode, setAppointmentCode] = useState<string>('');
+    const [appointmentId, setAppointmentId] = useState<number | null>(null);
     const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
     const [appointmentVerified, setAppointmentVerified] = useState<boolean>(false);
-    const [appointmentConfirmed, setAppointmentConfirmed] = useState<boolean>(false);
 
     // États pour le flux de paiement 
     const [paymentCode, setPaymentCode] = useState<string>('');
@@ -23,6 +23,92 @@ export const useAppState = () => {
     // États de chargement et d'erreur
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Action pour vérifier le code de rendez-vous
+    const verifyAppointmentCode = async (code: string) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Étape 1: Vérifier le code
+            let id: number | null;
+            try {
+                id = await ApiService.verifyAppointmentCode(code);
+            } catch (apiError) {
+                console.warn('API de vérification non disponible, utilisation de données simulées', apiError);
+                // En cas d'échec, vérifier si le code est dans les codes simulés valides
+                id = VALID_CODES.includes(code) ? 123456 : null;
+            }
+
+            if (!id) {
+                setError('Code de rendez-vous invalide');
+                setLoading(false);
+                return false;
+            }
+
+            // Stocker l'ID du rendez-vous
+            setAppointmentId(id);
+            setAppointmentCode(code);
+
+            // Étape 2: Récupérer les détails du rendez-vous
+            return await fetchAppointmentDetails(id);
+        } catch (err) {
+            console.error('Erreur lors de la vérification du code:', err);
+            setError('Erreur lors de la vérification. Veuillez contacter le secrétariat.');
+            setLoading(false);
+            return false;
+        }
+    };
+
+    // Action pour récupérer les détails du rendez-vous
+    const fetchAppointmentDetails = async (id: number) => {
+        setLoading(true);
+        try {
+            let details: PatientInfo | null;
+            try {
+                details = await ApiService.getAppointmentById(id);
+            } catch (apiError) {
+                console.warn('API de détails non disponible, utilisation de données simulées', apiError);
+                // Simuler les détails du rendez-vous
+                const mockData = VALID_CODES.length > 0 && MOCK_PATIENT_DATA[VALID_CODES[0]];
+                if (mockData) {
+                    details = {
+                        ...mockData,
+                        id: id,
+                        price: 49,
+                        couverture: 10,
+                        status: "validated"
+                    };
+                } else {
+                    details = null;
+                }
+            }
+
+            if (details) {
+                setPatientInfo(details);
+                setAppointmentVerified(true);
+                setLoading(false);
+                return true;
+            } else {
+                setError('Détails du rendez-vous introuvables');
+                setLoading(false);
+                return false;
+            }
+        } catch (err) {
+            console.error('Erreur lors de la récupération des détails:', err);
+            setError('Erreur lors de la récupération des détails. Veuillez contacter le secrétariat.');
+            setLoading(false);
+            return false;
+        }
+    };
+
+    // Reset pour le flux de rendez-vous
+    const resetAppointment = () => {
+        setAppointmentCode('');
+        setAppointmentId(null);
+        setPatientInfo(null);
+        setAppointmentVerified(false);
+    };
 
     // Fonction locale pour simuler la vérification du code de paiement
     const mockVerifyPaymentCode = async (code: string): Promise<PaymentInfo | null> => {
@@ -35,89 +121,6 @@ export const useAppState = () => {
         }
 
         return null;
-    };
-
-    // Actions pour le flux de rendez-vous
-    const verifyAppointment = async (code: string) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Essayer d'abord l'API réelle
-            let result: PatientInfo | null;
-
-            try {
-                // Utiliser l'API réelle
-                result = await ApiService.verifyAppointmentCode(code);
-            } catch (apiError) {
-                console.warn('API réelle non disponible, utilisation des données simulées:', apiError);
-                // En cas d'échec, utiliser les données simulées pour le développement
-                result = MOCK_PATIENT_DATA[code] || null;
-            }
-
-            if (result) {
-                setAppointmentCode(code);
-                setPatientInfo(result);
-                setAppointmentVerified(true);
-                return true;
-            } else {
-                setError('Code de rendez-vous invalide');
-                return false;
-            }
-        } catch (err: unknown) {
-            if (err instanceof Error && err.message && err.message.includes('Requête abandonnée')) {
-                setError('Le serveur ne répond pas. Veuillez réessayer plus tard.');
-            } else {
-                setError('Erreur lors de la vérification. Veuillez contacter le secrétariat.');
-            }
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Fonction pour confirmer le rendez-vous
-    const confirmAppointment = async (appointmentId: number) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Essayer d'abord l'API réelle
-            let success = false;
-
-            try {
-                // Utiliser l'API réelle
-                success = await ApiService.confirmAppointment(appointmentId);
-            } catch (apiError) {
-                console.warn('API réelle non disponible, simulation de confirmation:', apiError);
-                // En cas d'échec, simuler le succès pour le développement
-                success = true;
-            }
-
-            if (success) {
-                setAppointmentConfirmed(true);
-                return true;
-            } else {
-                setError('Erreur lors de la confirmation du rendez-vous');
-                return false;
-            }
-        } catch (err: unknown) {
-            if (err instanceof Error && err.message && err.message.includes('Requête abandonnée')) {
-                setError('Le serveur ne répond pas. Veuillez réessayer plus tard.');
-            } else {
-                setError('Erreur lors de la confirmation. Veuillez contacter le secrétariat.');
-            }
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const resetAppointment = () => {
-        setAppointmentCode('');
-        setPatientInfo(null);
-        setAppointmentVerified(false);
-        setAppointmentConfirmed(false);
     };
 
     // Actions pour le flux de paiement
@@ -141,16 +144,18 @@ export const useAppState = () => {
             if (result) {
                 setPaymentCode(code);
                 setPaymentInfo(result);
+                setLoading(false);
                 return true;
             } else {
                 setError('Code de paiement invalide');
+                setLoading(false);
                 return false;
             }
         } catch (err) {
+            console.error('Erreur lors de la vérification du paiement:', err);
             setError('Erreur lors de la vérification du paiement');
-            return false;
-        } finally {
             setLoading(false);
+            return false;
         }
     };
 
@@ -179,9 +184,9 @@ export const useAppState = () => {
     return {
         // États
         appointmentCode,
+        appointmentId,
         patientInfo,
         appointmentVerified,
-        appointmentConfirmed,
         paymentCode,
         paymentInfo,
         healthCardInserted,
@@ -190,8 +195,8 @@ export const useAppState = () => {
         error,
 
         // Actions
-        verifyAppointment,
-        confirmAppointment,
+        verifyAppointmentCode,
+        fetchAppointmentDetails,
         resetAppointment,
         verifyPayment,
         insertHealthCard,

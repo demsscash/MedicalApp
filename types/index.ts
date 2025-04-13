@@ -9,6 +9,10 @@ export type PatientInfo = {
     heureRendezVous: string;
     numeroSecu: string;
     verified: boolean;
+    // Nouvelles propriétés
+    price?: number; // Prix de la consultation
+    couverture?: number; // Montant de la couverture mutuelle
+    status?: string; // Statut du rendez-vous
 };
 
 export type PaymentInfo = {
