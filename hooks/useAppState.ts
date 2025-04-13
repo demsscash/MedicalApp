@@ -14,7 +14,7 @@ export const useAppState = () => {
     const [appointmentVerified, setAppointmentVerified] = useState<boolean>(false);
     const [appointmentConfirmed, setAppointmentConfirmed] = useState<boolean>(false);
 
-    // États pour le flux de paiement (inchangés)
+    // États pour le flux de paiement 
     const [paymentCode, setPaymentCode] = useState<string>('');
     const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
     const [healthCardInserted, setHealthCardInserted] = useState<boolean>(false);
@@ -54,7 +54,7 @@ export const useAppState = () => {
         }
     };
 
-    // Nouvelle fonction pour confirmer le rendez-vous
+    //  fonction pour confirmer le rendez-vous
     const confirmAppointment = async (code: string) => {
         setLoading(true);
         setError(null);
@@ -82,6 +82,7 @@ export const useAppState = () => {
             setLoading(false);
         }
     };
+
     const resetAppointment = () => {
         setAppointmentCode('');
         setPatientInfo(null);
@@ -89,7 +90,7 @@ export const useAppState = () => {
         setAppointmentConfirmed(false);
     };
 
-    // Actions pour le flux de paiement (inchangées)
+    // Actions pour le flux de paiement
     const verifyPayment = async (code: string) => {
         setLoading(true);
         setError(null);
@@ -139,7 +140,7 @@ export const useAppState = () => {
         appointmentCode,
         patientInfo,
         appointmentVerified,
-        appointmentConfirmed, // Nouvel état
+        appointmentConfirmed,
         paymentCode,
         paymentInfo,
         healthCardInserted,
@@ -149,13 +150,14 @@ export const useAppState = () => {
 
         // Actions
         verifyAppointment,
-        confirmAppointment, // Nouvelle action
+        confirmAppointment,
         resetAppointment,
         verifyPayment,
         insertHealthCard,
         completePayment,
         resetPayment,
         resetAll,
+        resetState: resetAll, // 👉 Alias pour l'utiliser dans les écrans
 
         // Setters
         setAppointmentCode,
