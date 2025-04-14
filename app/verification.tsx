@@ -24,19 +24,6 @@ export default function VerificationScreen() {
     const [errorMessage, setErrorMessage] = useState('');
     const [errorTitle, setErrorTitle] = useState('');
 
-    // Fonction locale pour simuler les données en cas d'échec de l'API
-    const mockPatientInfo = (appointmentId: number): PatientInfo => {
-        // Utiliser les données simulées du premier code valide
-        const mockData = MOCK_PATIENT_DATA[VALID_CODES[0]];
-        return {
-            ...mockData,
-            id: appointmentId,
-            price: 49,
-            couverture: 10,
-            status: "validated"
-        };
-    };
-
     // Fermeture du modal et redirection
     const handleCloseErrorModal = () => {
         setErrorModalVisible(false);
@@ -46,25 +33,46 @@ export default function VerificationScreen() {
     // Vérification du code de rendez-vous - Processus en deux étapes
     useEffect(() => {
         const verifyAppointment = async () => {
+            if (!code) {
+                setErrorTitle('Code manquant');
+                setErrorMessage('Aucun code de rendez-vous n\'a été fourni.');
+                setErrorModalVisible(true);
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoadingMessage("Vérification du code...");
 
-                // Étape 1: Vérifier le code et obtenir l'ID du rendez-vous
-                let appointmentId: number | null;
+                // Étape 1: Vérifier si le code est valide
+                let isValid: boolean;
                 try {
-                    appointmentId = await ApiService.verifyAppointmentCode(code as string);
+                    isValid = await ApiService.verifyAppointmentCode(code as string);
+                    console.log("Résultat de la vérification du code:", isValid);
                 } catch (error) {
                     console.error('Erreur lors de la vérification du code:', error);
 
-                    // En mode développement, on peut simuler un ID valide
-                    if (VALID_CODES.includes(code as string)) {
-                        appointmentId = 123456; // ID simulé pour le développement
+                    // Si c'est une erreur 404, considérer simplement que le code est invalide
+                    if (error instanceof Error && error.message && error.message.includes('404')) {
+                        console.log("Erreur 404 détectée, code invalide");
+                        isValid = false;
                     } else {
-                        throw error;
+                        // En mode développement, on peut simuler la validation
+                        isValid = VALID_CODES.includes(code as string);
+                        console.log("Utilisation de données simulées, code valide:", isValid);
+                        if (!isValid) {
+                            throw error;
+                        }
                     }
                 }
 
-                if (!appointmentId) {
+                // Force à true si le code est dans les codes de développement
+                if (VALID_CODES.includes(code as string)) {
+                    console.log("Code dans la liste des codes valides pour le développement");
+                    isValid = true;
+                }
+
+                if (!isValid) {
                     setLoading(false);
                     setErrorTitle('Code invalide');
                     setErrorMessage('Le code que vous avez saisi ne correspond à aucun rendez-vous dans notre système.');
@@ -72,22 +80,43 @@ export default function VerificationScreen() {
                     return;
                 }
 
-                // Étape 2: Récupérer les informations détaillées du rendez-vous
+                // Étape 2: Récupérer les informations du rendez-vous avec le même code
                 setLoadingMessage("Récupération des informations...");
                 try {
-                    const details = await ApiService.getAppointmentById(appointmentId);
+                    const details = await ApiService.getAppointmentByCode(code as string);
 
                     if (details) {
                         setPatientInfo(details);
                     } else {
                         // En cas d'échec, utiliser des données simulées
                         console.warn('Informations détaillées non disponibles, utilisation de données simulées');
-                        setPatientInfo(mockPatientInfo(appointmentId));
+                        const mockData = MOCK_PATIENT_DATA[code as string];
+                        if (mockData) {
+                            setPatientInfo({
+                                ...mockData,
+                                price: 49,
+                                couverture: 10,
+                                status: "validated"
+                            });
+                        } else {
+                            throw new Error('Données simulées non disponibles pour ce code');
+                        }
                     }
                 } catch (detailsError) {
                     console.error('Erreur lors de la récupération des détails:', detailsError);
-                    // En cas d'échec, utiliser des données simulées
-                    setPatientInfo(mockPatientInfo(appointmentId));
+
+                    // En cas d'échec, tenter d'utiliser les données simulées
+                    const mockData = MOCK_PATIENT_DATA[code as string];
+                    if (mockData) {
+                        setPatientInfo({
+                            ...mockData,
+                            price: 49,
+                            couverture: 10,
+                            status: "validated"
+                        });
+                    } else {
+                        throw new Error('Données simulées non disponibles pour ce code');
+                    }
                 } finally {
                     setLoading(false);
                 }
@@ -111,7 +140,11 @@ export default function VerificationScreen() {
             const timer = setTimeout(() => {
                 router.push({
                     pathname: ROUTES.APPOINTMENT_CONFIRMED,
-                    params: { name: patientInfo.nom }
+                    params: {
+                        name: patientInfo.nom,
+                        price: patientInfo.price?.toString() || '0',
+                        couverture: patientInfo.couverture?.toString() || '0'
+                    }
                 });
             }, 3000);
 

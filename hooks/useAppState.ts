@@ -10,7 +10,6 @@ import { MOCK_PATIENT_DATA, MOCK_PAYMENT_DATA, VALID_CODES } from '../constants/
 export const useAppState = () => {
     // États pour le flux de rendez-vous
     const [appointmentCode, setAppointmentCode] = useState<string>('');
-    const [appointmentId, setAppointmentId] = useState<number | null>(null);
     const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
     const [appointmentVerified, setAppointmentVerified] = useState<boolean>(false);
 
@@ -30,28 +29,27 @@ export const useAppState = () => {
         setError(null);
 
         try {
-            // Étape 1: Vérifier le code
-            let id: number | null;
+            // Étape 1: Vérifier si le code est valide
+            let isCodeValid: boolean;
             try {
-                id = await ApiService.verifyAppointmentCode(code);
+                isCodeValid = await ApiService.verifyAppointmentCode(code);
             } catch (apiError) {
                 console.warn('API de vérification non disponible, utilisation de données simulées', apiError);
                 // En cas d'échec, vérifier si le code est dans les codes simulés valides
-                id = VALID_CODES.includes(code) ? 123456 : null;
+                isCodeValid = VALID_CODES.includes(code);
             }
 
-            if (!id) {
+            if (!isCodeValid) {
                 setError('Code de rendez-vous invalide');
                 setLoading(false);
                 return false;
             }
 
-            // Stocker l'ID du rendez-vous
-            setAppointmentId(id);
+            // Stocker le code du rendez-vous
             setAppointmentCode(code);
 
-            // Étape 2: Récupérer les détails du rendez-vous
-            return await fetchAppointmentDetails(id);
+            // Étape 2: Récupérer les détails du rendez-vous avec le même code
+            return await fetchAppointmentDetails(code);
         } catch (err) {
             console.error('Erreur lors de la vérification du code:', err);
             setError('Erreur lors de la vérification. Veuillez contacter le secrétariat.');
@@ -60,21 +58,20 @@ export const useAppState = () => {
         }
     };
 
-    // Action pour récupérer les détails du rendez-vous
-    const fetchAppointmentDetails = async (id: number) => {
+    // Action pour récupérer les détails du rendez-vous par code
+    const fetchAppointmentDetails = async (code: string) => {
         setLoading(true);
         try {
             let details: PatientInfo | null;
             try {
-                details = await ApiService.getAppointmentById(id);
+                details = await ApiService.getAppointmentByCode(code);
             } catch (apiError) {
                 console.warn('API de détails non disponible, utilisation de données simulées', apiError);
                 // Simuler les détails du rendez-vous
-                const mockData = VALID_CODES.length > 0 && MOCK_PATIENT_DATA[VALID_CODES[0]];
+                const mockData = VALID_CODES.length > 0 && MOCK_PATIENT_DATA[code];
                 if (mockData) {
                     details = {
                         ...mockData,
-                        id: id,
                         price: 49,
                         couverture: 10,
                         status: "validated"
@@ -105,7 +102,6 @@ export const useAppState = () => {
     // Reset pour le flux de rendez-vous
     const resetAppointment = () => {
         setAppointmentCode('');
-        setAppointmentId(null);
         setPatientInfo(null);
         setAppointmentVerified(false);
     };
@@ -184,7 +180,6 @@ export const useAppState = () => {
     return {
         // États
         appointmentCode,
-        appointmentId,
         patientInfo,
         appointmentVerified,
         paymentCode,
