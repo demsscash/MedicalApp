@@ -6,6 +6,7 @@ import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
 import LoadingIndicator from '../components/ui/LoadingIndicator';
 import { Title, Paragraph } from '../components/ui/Typography';
+import PDFModal from '../components/ui/PDFModal';
 import { ROUTES } from '../constants/routes';
 
 export default function PaymentSuccessScreen() {
@@ -13,6 +14,11 @@ export default function PaymentSuccessScreen() {
     const [printing, setPrinting] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(20);
     const [endTime, setEndTime] = useState(Date.now() + 20000);
+
+    // États pour le PDF
+    const [pdfModalVisible, setPdfModalVisible] = useState(false);
+    const [documentTitle, setDocumentTitle] = useState('');
+    const [documentType, setDocumentType] = useState<'receipt' | 'prescription'>('receipt');
 
     // Fonction pour mettre à jour le timer
     const updateTimer = () => {
@@ -31,7 +37,8 @@ export default function PaymentSuccessScreen() {
     // Effet pour gérer le timer
     useEffect(() => {
         // Ne démarrer le timer que si nous ne sommes pas en mode impression
-        if (printing) return;
+        // Et que le modal PDF n'est pas ouvert
+        if (printing || pdfModalVisible) return;
 
         // Mettre à jour immédiatement
         updateTimer();
@@ -45,47 +52,57 @@ export default function PaymentSuccessScreen() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [endTime, printing, router]);
+    }, [endTime, printing, pdfModalVisible, router]);
 
     // Fonction pour réinitialiser le timer à 20 secondes
     const resetTimer = () => {
         setEndTime(Date.now() + 20000);
     };
 
-    // Fonction pour gérer l'impression
+    // Fonction pour ouvrir la prévisualisation du document
+    const openDocumentPreview = (type: string) => {
+        // Arrêter le timer pendant que le document est ouvert
+        setPrinting(true);
+
+        if (type === 'reçu') {
+            setDocumentTitle('Reçu de paiement');
+            setDocumentType('receipt');
+        } else {
+            setDocumentTitle('Ordonnance médicale');
+            setDocumentType('prescription');
+        }
+
+        setPdfModalVisible(true);
+    };
+
+    // Fonction pour fermer la prévisualisation du document
+    const closeDocumentPreview = () => {
+        setPdfModalVisible(false);
+        setPrinting(false);
+        resetTimer();
+    };
+
+    // Fonction pour gérer "l'impression" (prévisualisation du document)
     const handlePrint = async (type: string) => {
         // Mettre en mode impression (ce qui arrête le timer)
         setPrinting(true);
 
         try {
-            // Simuler un délai d'impression de 2 secondes
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Simuler un délai d'impression de 1 seconde
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // IMPORTANT: D'abord mettre fin au mode d'impression pour éviter les problèmes
-            setPrinting(false);
-            resetTimer();
+            // Ouvrir la prévisualisation du document
+            openDocumentPreview(type);
 
-            // Afficher l'alerte de succès
-            Alert.alert(
-                'Impression terminée',
-                `Votre ${type} a été imprimé.`,
-                [{
-                    text: 'OK',
-                    onPress: () => {
-                        // Réinitialiser le timer à 20 secondes à partir de maintenant
-                        resetTimer();
-                    }
-                }]
-            );
         } catch (error) {
-            console.error(`Erreur lors de l'impression du ${type}:`, error);
+            console.error(`Erreur lors de l'affichage du ${type}:`, error);
 
             // IMPORTANT: S'assurer que le mode d'impression est toujours désactivé
             setPrinting(false);
 
             Alert.alert(
-                'Erreur d\'impression',
-                `Une erreur est survenue lors de l'impression du ${type}.`,
+                'Erreur d\'affichage',
+                `Une erreur est survenue lors de l'affichage du ${type}.`,
                 [{
                     text: 'OK',
                     onPress: () => {
@@ -115,7 +132,7 @@ export default function PaymentSuccessScreen() {
             </Paragraph>
 
             {/* Affichage du timer (petit et discret) - masqué pendant l'impression */}
-            {!printing && (
+            {!printing && !pdfModalVisible && (
                 <Paragraph className="text-sm text-gray-400 text-center mb-8">
                     Retour à l'accueil dans {secondsLeft} secondes
                 </Paragraph>
@@ -142,10 +159,18 @@ export default function PaymentSuccessScreen() {
                 <View className="items-center">
                     <LoadingIndicator size="large" />
                     <Text className="text-lg text-gray-700 mt-4">
-                        Impression en cours...
+                        Préparation en cours...
                     </Text>
                 </View>
             )}
+
+            {/* Modal pour afficher la prévisualisation du document */}
+            <PDFModal
+                visible={pdfModalVisible}
+                documentType={documentType}
+                onClose={closeDocumentPreview}
+                documentTitle={documentTitle}
+            />
         </ScreenLayout>
     );
 }
