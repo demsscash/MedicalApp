@@ -1,6 +1,6 @@
 // services/api.ts
 import { PatientInfo, PaymentInfo } from '../types';
-import { MOCK_PATIENT_DATA, VALID_CODES } from '../constants/mockData';
+import { MOCK_PATIENT_DATA, VALID_CODES, MOCK_PAYMENT_DATA } from '../constants/mockData';
 
 // Configuration de l'API
 const API_CONFIG = {
@@ -190,6 +190,13 @@ export const ApiService = {
      */
     async verifyPaymentCode(code: string): Promise<PaymentInfo | null> {
         try {
+            // Vérifier d'abord si nous avons des données de test pour ce code
+            if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA && MOCK_PAYMENT_DATA[code]) {
+                console.log("Code de test détecté, utilisation des données simulées de paiement");
+                return MOCK_PAYMENT_DATA[code];
+            }
+
+            // Sinon, appeler l'API
             const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.PAYMENT_VERIFY}`, {
                 method: 'POST',
                 headers: {
@@ -205,18 +212,23 @@ export const ApiService = {
                 return null;
             }
 
-            // Simulation des données de paiement (à adapter)
+            // Mapper les données de l'API vers le format attendu
             return {
-                consultation: "Consultation médicale",
-                consultationPrice: "30.00 euro",
-                mutuelle: "Mutuelle Couverte",
-                mutuelleAmount: "-18.00 euro",
-                totalTTC: "10.00 €",
-                regimeObligatoire: "Regime Obligatoire",
-                regimeObligatoireValue: "-6 euro",
+                consultation: data.consultation || "Consultation médicale",
+                consultationPrice: data.price || "30.00 euro",
+                mutuelle: data.mutuelle || "Mutuelle Couverte",
+                mutuelleAmount: data.mutuelleAmount || "-18.00 euro",
+                totalTTC: data.totalTTC || "10.00 €",
+                regimeObligatoire: data.regimeObligatoire || "Regime Obligatoire",
+                regimeObligatoireValue: data.regimeObligatoireValue || "-6 euro",
             };
         } catch (error) {
             console.error('Erreur lors de la vérification du code de paiement:', error);
+            // En cas d'erreur, vérifier si nous avons des données de test pour ce code
+            if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA && MOCK_PAYMENT_DATA[code]) {
+                console.log("Utilisation des données simulées de paiement en secours");
+                return MOCK_PAYMENT_DATA[code];
+            }
             throw error;
         }
     }

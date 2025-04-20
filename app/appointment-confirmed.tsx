@@ -1,20 +1,21 @@
 // app/appointment-confirmed.tsx
-
 import React, { useCallback, useLayoutEffect } from 'react';
 import { View, BackHandler, Text } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
 import { Card, CenteredCard, HighlightCard } from '../components/ui/Card';
 import { Heading, SubHeading } from '../components/ui/Typography';
 import { COLORS } from '../constants/theme';
-import { useAppState } from '../hooks/useAppState'; // Hook global state
+import { useAppState } from '../hooks/useAppState';
+import { ROUTES } from '../constants/routes';
 
 export default function AppointmentConfirmedScreen() {
     const navigation = useNavigation();
-    const { resetState } = useAppState(); // Fonction de reset dans ton hook global
+    const router = useRouter();
+    const { resetState } = useAppState();
     const { name, price, couverture } = useLocalSearchParams();
 
     // Calculer le reste à payer si les paramètres sont disponibles
@@ -42,11 +43,8 @@ export default function AppointmentConfirmedScreen() {
 
     // 🧼 Reset navigation + état global
     const handleReturn = () => {
-        resetState(); // vide le state global (code, patient, etc.)
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'index' }], // fichier app/index.tsx
-        });
+        resetState();
+        router.push(ROUTES.HOME);
     };
 
     return (

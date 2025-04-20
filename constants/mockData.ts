@@ -8,7 +8,17 @@ export const MOCK_PATIENT_DATA = {
         numeroSecu: '2 90 01 75 123 456 78',
         verified: true
     },
-    // Ajoutez d'autres patients simulés ici
+    // Ajout du nouveau code de test basé sur la réponse API
+    '460163': {
+        nom: 'Ball4 Boubou4',
+        dateNaissance: '09/10/1991',
+        dateRendezVous: '22/04/2025',
+        heureRendezVous: '11:23',
+        numeroSecu: '2 46 19 71 094 456 78',
+        verified: true,
+        price: 37,
+        couverture: 13
+    }
 };
 
 export const MOCK_PAYMENT_DATA = {
@@ -21,8 +31,17 @@ export const MOCK_PAYMENT_DATA = {
         regimeObligatoire: "Regime Obligatoire",
         regimeObligatoireValue: "-6 euro",
     },
-    // Ajoutez d'autres paiements simulés ici
+    // Ajout du nouveau code de test basé sur la réponse API
+    '460163': {
+        consultation: "consultation",
+        consultationPrice: "37.00 euro",
+        mutuelle: "Mutuelle",
+        mutuelleAmount: "-13.00 euro",
+        totalTTC: "24.00 €",
+        regimeObligatoire: "Régime Obligatoire",
+        regimeObligatoireValue: "-6.50 euro",
+    }
 };
 
 export const DEFAULT_CODE_LENGTH = 6;
-export const VALID_CODES = ['123456'];
+export const VALID_CODES = ['123456', '460163'];

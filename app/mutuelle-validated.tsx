@@ -38,34 +38,39 @@ export default function MutuelleValidatedScreen() {
                 Scannez votre{"\n"}mutuelle
             </Title>
 
-            {/* Carte mutuelle avec badge de validation superposé */}
-            <View className="mb-16 relative">
-                <View className="w-60 h-60 bg-white rounded-3xl items-center justify-center shadow">
+            {/* Nouveau visuel pour le scan validé */}
+            <View className="mb-16 relative items-center">
+                {/* Seulement l'image QR code avec badge de validation */}
+                <View className="relative">
                     <Image
-                        source={require('../assets/images/Rectangle.png')}
-                        className="w-48 h-48"
+                        source={require('../assets/images/qr-code.png')}
+                        style={{
+                            width: 362,
+                            height: 362,
+                            transform: [{ rotate: '15.25deg' }]
+                        }}
                         resizeMode="contain"
                     />
-                </View>
 
-                {/* Badge de validation - position fixe */}
-                <View style={{
-                    position: 'absolute',
-                    top: 10,
-                    right: 10,
-                    width: 80,
-                    height: 80,
-                    borderRadius: 40,
-                    backgroundColor: 'rgba(240, 245, 255, 0.9)',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 1.5,
-                    elevation: 2
-                }}>
-                    <Text style={{ color: '#4169E1', fontSize: 30 }}>✓</Text>
+                    {/* Badge de validation */}
+                    <View style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        width: 70,
+                        height: 70,
+                        borderRadius: 35,
+                        backgroundColor: 'rgba(240, 245, 255, 0.9)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 1.5,
+                        elevation: 2
+                    }}>
+                        <Text style={{ color: '#4169E1', fontSize: 30 }}>✓</Text>
+                    </View>
                 </View>
             </View>
 

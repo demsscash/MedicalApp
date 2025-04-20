@@ -1,6 +1,6 @@
 // app/mutuelle-scan.tsx
 import React, { useState } from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
+import { Image, TouchableOpacity, View, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
@@ -48,22 +48,29 @@ export default function MutuelleScanScreen() {
                 Scannez votre{"\n"}mutuelle
             </Title>
 
-            {/* Carte mutuelle et zone de scan */}
+            {/* Nouveau visuel pour le scan de la mutuelle */}
             <TouchableOpacity
                 onPress={handleMutuelleCard}
                 activeOpacity={0.8}
                 className="mb-16 items-center justify-center"
                 disabled={loading}
             >
-                <View className="w-60 h-60 bg-white rounded-3xl items-center justify-center shadow">
+                <View className="relative items-center">
                     {loading ? (
                         <LoadingIndicator size="large" />
                     ) : (
-                        <Image
-                            source={require('../assets/images/Rectangle.png')}
-                            className="w-48 h-48"
-                            resizeMode="contain"
-                        />
+                        <>
+                            {/* Image QR code avec rotation de 15.25 degrés */}
+                            <Image
+                                source={require('../assets/images/qr-code.png')}
+                                style={{
+                                    width: 362,
+                                    height: 362,
+                                    transform: [{ rotate: '15.25deg' }]
+                                }}
+                                resizeMode="contain"
+                            />
+                        </>
                     )}
                 </View>
             </TouchableOpacity>

@@ -10,7 +10,7 @@ import { Card, CenteredCard, HighlightCard } from '../components/ui/Card';
 import { Heading, Title } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 import { COLORS } from '../constants/theme';
-import { verifyPaymentCode } from '../utils';
+import { ApiService } from '../services/api';
 import { PaymentInfo } from '../types';
 
 export default function PaymentConfirmationScreen() {
@@ -24,7 +24,7 @@ export default function PaymentConfirmationScreen() {
     useEffect(() => {
         const loadPaymentInfo = async () => {
             try {
-                const result = await verifyPaymentCode(code as string);
+                const result = await ApiService.verifyPaymentCode(code as string);
                 if (result) {
                     setPaymentInfo(result);
                 } else {

@@ -9,7 +9,6 @@ import { Heading, Paragraph } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 import { ApiService } from '../services/api';
 import { PatientInfo } from '../types';
-import { MOCK_PATIENT_DATA, VALID_CODES } from '../constants/mockData';
 import ErrorModal from '../components/ui/ErrorModal';
 
 export default function VerificationScreen() {
@@ -45,32 +44,8 @@ export default function VerificationScreen() {
                 setLoadingMessage("Vérification du code...");
 
                 // Étape 1: Vérifier si le code est valide
-                let isValid: boolean;
-                try {
-                    isValid = await ApiService.verifyAppointmentCode(code as string);
-                    console.log("Résultat de la vérification du code:", isValid);
-                } catch (error) {
-                    console.error('Erreur lors de la vérification du code:', error);
-
-                    // Si c'est une erreur 404, considérer simplement que le code est invalide
-                    if (error instanceof Error && error.message && error.message.includes('404')) {
-                        console.log("Erreur 404 détectée, code invalide");
-                        isValid = false;
-                    } else {
-                        // En mode développement, on peut simuler la validation
-                        isValid = VALID_CODES.includes(code as string);
-                        console.log("Utilisation de données simulées, code valide:", isValid);
-                        if (!isValid) {
-                            throw error;
-                        }
-                    }
-                }
-
-                // Force à true si le code est dans les codes de développement
-                if (VALID_CODES.includes(code as string)) {
-                    console.log("Code dans la liste des codes valides pour le développement");
-                    isValid = true;
-                }
+                const isValid = await ApiService.verifyAppointmentCode(code as string);
+                console.log("Résultat de la vérification du code:", isValid);
 
                 if (!isValid) {
                     setLoading(false);
@@ -87,38 +62,16 @@ export default function VerificationScreen() {
 
                     if (details) {
                         setPatientInfo(details);
+                        setLoading(false);
                     } else {
-                        // En cas d'échec, utiliser des données simulées
-                        console.warn('Informations détaillées non disponibles, utilisation de données simulées');
-                        const mockData = MOCK_PATIENT_DATA[code as string];
-                        if (mockData) {
-                            setPatientInfo({
-                                ...mockData,
-                                price: 49,
-                                couverture: 10,
-                                status: "validated"
-                            });
-                        } else {
-                            throw new Error('Données simulées non disponibles pour ce code');
-                        }
+                        throw new Error('Détails du rendez-vous non disponibles');
                     }
                 } catch (detailsError) {
                     console.error('Erreur lors de la récupération des détails:', detailsError);
-
-                    // En cas d'échec, tenter d'utiliser les données simulées
-                    const mockData = MOCK_PATIENT_DATA[code as string];
-                    if (mockData) {
-                        setPatientInfo({
-                            ...mockData,
-                            price: 49,
-                            couverture: 10,
-                            status: "validated"
-                        });
-                    } else {
-                        throw new Error('Données simulées non disponibles pour ce code');
-                    }
-                } finally {
                     setLoading(false);
+                    setErrorTitle('Erreur de serveur');
+                    setErrorMessage('Une erreur s\'est produite lors de la récupération des détails. Veuillez réessayer plus tard ou contacter le secrétariat.');
+                    setErrorModalVisible(true);
                 }
 
             } catch (error) {
