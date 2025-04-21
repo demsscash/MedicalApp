@@ -15,7 +15,7 @@ import { PaymentInfo } from '../types';
 
 export default function PaymentConfirmationScreen() {
     const router = useRouter();
-    const { code } = useLocalSearchParams();
+    const { code, appointmentId } = useLocalSearchParams();
     const [loading, setLoading] = useState(true);
     const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
     const [paymentComplete, setPaymentComplete] = useState(false);
@@ -24,7 +24,8 @@ export default function PaymentConfirmationScreen() {
     useEffect(() => {
         const loadPaymentInfo = async () => {
             try {
-                const result = await ApiService.verifyPaymentCode(code as string);
+                // Utiliser getPaymentByCode au lieu de verifyPaymentCode
+                const result = await ApiService.getPaymentByCode(code as string);
                 if (result) {
                     setPaymentInfo(result);
                 } else {
@@ -45,11 +46,49 @@ export default function PaymentConfirmationScreen() {
             }
         };
 
-        loadPaymentInfo();
-    }, [code, router]);
+        // Si l'ID du rendez-vous est déjà disponible dans les paramètres, l'utiliser
+        if (appointmentId) {
+            // Simuler un résultat pour utiliser directement l'ID transmis
+            const idNumber = parseInt(appointmentId as string);
+            setPaymentInfo({
+                appointmentId: idNumber,
+                consultation: "Consultation médicale",
+                consultationPrice: "30.00 €",
+                mutuelle: "Mutuelle",
+                mutuelleAmount: "-18.00 €",
+                totalTTC: "10.00 €",
+                regimeObligatoire: "Régime Obligatoire",
+                regimeObligatoireValue: "-6.00 €",
+            });
+            setLoading(false);
+        } else if (code) {
+            loadPaymentInfo();
+        } else {
+            // Ni code ni ID fourni
+            console.error('Aucun code ou ID de rendez-vous fourni');
+            router.push({
+                pathname: ROUTES.PAYMENT,
+                params: { error: 'invalidCode' }
+            });
+        }
+    }, [code, appointmentId, router]);
 
     const handlePayment = () => {
-        router.push(ROUTES.TPE);
+        if (paymentInfo?.appointmentId) {
+            router.push({
+                pathname: ROUTES.TPE,
+                params: { 
+                    code: code,
+                    appointmentId: paymentInfo.appointmentId.toString()
+                }
+            });
+        } else {
+            // Fallback si l'ID n'est pas disponible
+            router.push({
+                pathname: ROUTES.TPE,
+                params: { code: code }
+            });
+        }
     };
 
     const handleReturn = () => {

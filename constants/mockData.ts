@@ -30,6 +30,7 @@ export const MOCK_PAYMENT_DATA = {
         totalTTC: "10.00 €",
         regimeObligatoire: "Regime Obligatoire",
         regimeObligatoireValue: "-6 euro",
+        id: "12345" // ID direct pour le téléchargement des documents
     },
     // Ajout du nouveau code de test basé sur la réponse API
     '460163': {
@@ -40,6 +41,7 @@ export const MOCK_PAYMENT_DATA = {
         totalTTC: "24.00 €",
         regimeObligatoire: "Régime Obligatoire",
         regimeObligatoireValue: "-6.50 euro",
+        id: "98765" // ID direct pour le téléchargement des documents
     }
 };
 

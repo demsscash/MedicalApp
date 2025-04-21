@@ -1,21 +1,23 @@
 // services/api.ts
 import { PatientInfo, PaymentInfo } from '../types';
 import { MOCK_PATIENT_DATA, VALID_CODES, MOCK_PAYMENT_DATA } from '../constants/mockData';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 
 // Configuration de l'API
 const API_CONFIG = {
     baseUrl: 'http://localhost:8080/api',
     timeout: 10000,
     headers: {
-        'Accept': '*/*',
-        'Accept-Encoding': 'deflate, gzip',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     },
     endpoints: {
         VALIDATE_CODE: '/kiosk/validate',
-        GET_APPOINTMENT: '/kiosk/appointment',  // Endpoint pour obtenir un rendez-vous avec le code
-        PAYMENT_PROCESS: '/kiosk/payment/process'
+        GET_APPOINTMENT: '/kiosk/appointment',
+        INVOICE_PDF: '/kiosk/invoices',
+        PRESCRIPTION_PDF: '/kiosk/prescriptions'
     }
 };
 
@@ -34,10 +36,9 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
 
         clearTimeout(id);
 
-        // Pour vérification du code, traiter 404 comme une réponse valide (code invalide)
         if (url.includes(API_CONFIG.endpoints.VALIDATE_CODE) && response.status === 404) {
             console.log("Code invalide détecté (statut 404)");
-            return response; // Retourner la réponse pour qu'on puisse traiter le 404 comme code invalide
+            return response;
         }
 
         if (!response.ok) {
@@ -61,54 +62,49 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
  */
 export const ApiService = {
     /**
-     * Vérifie si un code de rendez-vous est valide
-     * @param code Code à 6 chiffres du rendez-vous
-     * @returns true si le code est valide, sinon false
+     * Vérifie si un code de rendez-vous est valide (utilisé par le premier flux)
+     * Cette méthode reste inchangée
      */
     async verifyAppointmentCode(code: string): Promise<boolean> {
         try {
-            // Vérifier le code
+            // En mode développement, vérifier directement avec les données simulées
+            if (process.env.NODE_ENV !== 'production') {
+                console.log("Mode développement: vérification avec données simulées");
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return VALID_CODES.includes(code);
+            }
+
+            // Pour la production
             const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.VALIDATE_CODE}`, {
                 method: 'POST',
-                headers: {
-                    ...API_CONFIG.headers,
-                },
+                headers: API_CONFIG.headers,
                 body: JSON.stringify({ code }),
             });
 
-            // Si le serveur retourne 404, interpréter comme code invalide
             if (response.status === 404) {
-                console.log("Le serveur a retourné 404 - code invalide");
                 return false;
             }
 
             let data;
             try {
                 data = await response.json();
-                console.log("Réponse API pour la vérification du code:", data);
             } catch (e) {
-                console.log("Erreur lors du parsing JSON:", e);
-                // Si aucune donnée JSON valide n'est reçue mais que le statut est 200, 
-                // c'est probablement une réponse de succès sans contenu
                 return response.status === 200;
             }
 
-            // L'API peut renvoyer différentes structures de réponse pour indiquer le succès
-            // Vérifiez toutes les possibilités courantes
             const isValid =
-                // Si data.success existe et est true
                 (data && data.success === true) ||
-                // OU si data.status est "success"
                 (data && data.status === "success") ||
-                // OU si data a un champ appointment/rendezVous
                 (data && (data.appointment || data.rendezVous)) ||
-                // OU si le statut HTTP est 200 et data existe (indication minimale de succès)
                 (response.status === 200 && data);
 
-            console.log("Code valide:", isValid);
             return isValid;
         } catch (error) {
             console.error('Erreur lors de la vérification du code:', error);
+            // En cas d'erreur, vérifier si c'est un code de test valide
+            if (VALID_CODES.includes(code)) {
+                return true;
+            }
             throw error;
         }
     },
@@ -120,62 +116,93 @@ export const ApiService = {
      */
     async getAppointmentByCode(code: string): Promise<PatientInfo | null> {
         try {
-            // Gestion spéciale des codes de test
-            if (VALID_CODES.includes(code) && MOCK_PATIENT_DATA && MOCK_PATIENT_DATA[code]) {
-                console.log("Code de test détecté, utilisation des données simulées");
-                const mockData = MOCK_PATIENT_DATA[code];
+            // En mode développement, utiliser les données simulées
+            if (process.env.NODE_ENV !== 'production' && VALID_CODES.includes(code) && MOCK_PATIENT_DATA[code]) {
+                console.log("Mode développement: données de rendez-vous simulées");
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 return {
-                    ...mockData,
+                    ...MOCK_PATIENT_DATA[code],
                     price: 49,
                     couverture: 10,
-                    status: "validated"
+                    status: "validated",
+                    id: parseInt(code)
                 };
             }
 
-            // URL avec le code dans le chemin ou en paramètre selon l'API
-            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${code}`;
-            console.log(`Appelant l'API avec l'URL: ${url}`);
+            try {
+                // Pour la production ou le développement avec API réelle
+                const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${code}`;
+                console.log(`Appelant l'API avec l'URL: ${url}`);
+                
+                const response = await fetchWithTimeout(url, {
+                    method: 'GET',
+                    headers: API_CONFIG.headers,
+                });
 
-            const response = await fetchWithTimeout(url, {
-                method: 'GET',
-                headers: {
-                    ...API_CONFIG.headers,
-                },
-            });
+                const appointmentDetails = await response.json();
+                console.log("Réponse de l'API GET_APPOINTMENT:", appointmentDetails);
+                
+                if (!appointmentDetails) {
+                    return null;
+                }
 
-            const appointmentDetails = await response.json();
+                // Formater la date et l'heure si disponibles
+                let dateStr = "01/01/2025";
+                let timeStr = "00:00";
 
-            if (!appointmentDetails) {
-                return null;
+                if (appointmentDetails.appointmentDate) {
+                    try {
+                        const date = new Date(appointmentDetails.appointmentDate);
+                        dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+                        timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    } catch (e) {
+                        console.error("Erreur lors du formatage de la date:", e);
+                    }
+                }
+
+                // Récupérer les infos du patient
+                const patientInfo = appointmentDetails.patient || {};
+                const fullName = patientInfo.fullName || `${patientInfo.prenom || ''} ${patientInfo.nom || ''}`;
+
+                // Formater le n° de sécu à partir du téléphone si disponible
+                let numeroSecu = "";
+                if (patientInfo.telephone) {
+                    const tel = patientInfo.telephone.padEnd(15, '0');
+                    numeroSecu = `${tel.substring(0, 1)} ${tel.substring(1, 3)} ${tel.substring(3, 5)} ${tel.substring(5, 7)} ${tel.substring(7, 10)} ${tel.substring(10, 13)} ${tel.substring(13, 15)}`;
+                } else {
+                    // Valeur par défaut
+                    numeroSecu = "0 00 00 00 000 000 00";
+                }
+
+                return {
+                    id: appointmentDetails.id,
+                    nom: fullName.trim() || "Patient",
+                    dateNaissance: patientInfo.date_naissance ? new Date(patientInfo.date_naissance).toLocaleDateString('fr-FR') : "01/01/1990",
+                    dateRendezVous: dateStr,
+                    heureRendezVous: timeStr,
+                    numeroSecu: numeroSecu,
+                    verified: true,
+                    price: appointmentDetails.price || 0,
+                    couverture: appointmentDetails.couverture || 0,
+                    status: appointmentDetails.status || "validated"
+                };
+            } catch (apiError) {
+                console.error("Erreur API, utilisation des données de secours:", apiError);
+                
+                // En cas d'erreur, essayer les données simulées
+                if (VALID_CODES.includes(code) && MOCK_PATIENT_DATA[code]) {
+                    return {
+                        ...MOCK_PATIENT_DATA[code],
+                        price: 49,
+                        couverture: 10,
+                        status: "validated",
+                        id: parseInt(code)
+                    };
+                }
+                
+                throw apiError;
             }
-
-            // Formater la date et l'heure si disponibles
-            let dateStr = "01/01/2025";
-            let timeStr = "00:00";
-
-            if (appointmentDetails.date) {
-                const dateTime = appointmentDetails.date.split(' ');
-                dateStr = dateTime[0].split('-').reverse().join('/'); // Convertir YYYY-MM-DD en DD/MM/YYYY
-                timeStr = dateTime[1]?.substring(0, 5) || "00:00"; // Extraire HH:MM
-            }
-
-            // Formater le n° de sécu (simulation car non fourni par l'API)
-            const randomSecu = Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
-            const formattedSecu = `${randomSecu.substring(0, 1)} ${randomSecu.substring(1, 3)} ${randomSecu.substring(3, 5)} ${randomSecu.substring(5, 7)} ${randomSecu.substring(7, 10)} ${randomSecu.substring(10, 13)} ${randomSecu.substring(13, 15)}`;
-
-            // Mapper les données de l'API vers le format attendu par l'application
-            return {
-                nom: appointmentDetails.patientName || "Patient",
-                dateNaissance: "01/01/1990", // Non fourni par l'API, valeur par défaut
-                dateRendezVous: dateStr,
-                heureRendezVous: timeStr,
-                numeroSecu: formattedSecu,
-                verified: true,
-                // Données financières
-                price: appointmentDetails.price || 0,
-                couverture: appointmentDetails.couverture || 0,
-                status: appointmentDetails.status || "validated"
-            };
         } catch (error) {
             console.error('Erreur lors de la récupération des détails du rendez-vous:', error);
             throw error;
@@ -183,63 +210,165 @@ export const ApiService = {
     },
 
     /**
-     * Vérifie un code de paiement en utilisant l'endpoint GET_APPOINTMENT
-     * @param code Code à 6 chiffres pour le paiement
-     * @returns Informations de paiement si valide, sinon null
+     * Récupère les informations de paiement à partir du code de validation
+     * Utilise simplement getAppointmentByCode et convertit le résultat au format PaymentInfo
      */
-    async verifyPaymentCode(code: string): Promise<PaymentInfo | null> {
+    async getPaymentByCode(code: string): Promise<PaymentInfo | null> {
         try {
-            // Vérifier d'abord si nous avons des données de test pour ce code
-            if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA && MOCK_PAYMENT_DATA[code]) {
-                console.log("Code de test détecté, utilisation des données simulées de paiement");
-                return MOCK_PAYMENT_DATA[code];
-            }
-
-            // MODIFICATION: Utiliser GET_APPOINTMENT pour vérifier le code de paiement
-            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${code}`;
-            console.log(`Appelant l'API pour vérifier le paiement avec l'URL: ${url}`);
-
-            const response = await fetchWithTimeout(url, {
-                method: 'GET',
-                headers: {
-                    ...API_CONFIG.headers,
-                },
-            });
-
-            const appointmentDetails = await response.json();
-
-            if (!appointmentDetails) {
+            // Utiliser getAppointmentByCode pour récupérer les informations du rendez-vous
+            const appointmentDetails = await this.getAppointmentByCode(code);
+            
+            if (!appointmentDetails || !appointmentDetails.id) {
+                console.error("Impossible de récupérer l'ID du rendez-vous pour le code:", code);
                 return null;
             }
-
-            // Convertir les détails du rendez-vous en informations de paiement
+            
+            // Construire les informations de paiement à partir des données du rendez-vous
+            const appointmentId = appointmentDetails.id;
+            const price = appointmentDetails.price || 0;
+            const couverture = appointmentDetails.couverture || 0;
+            const total = price - couverture;
+            
+            console.log(`Rendez-vous trouvé avec ID=${appointmentId}, prix=${price}, couverture=${couverture}, total=${total}`);
+            
             return {
+                appointmentId: appointmentId,
                 consultation: "Consultation médicale",
-                consultationPrice: `${appointmentDetails.price || "30.00"} euro`,
+                consultationPrice: `${price.toFixed(2)} €`,
                 mutuelle: "Mutuelle",
-                mutuelleAmount: `${-appointmentDetails.couverture || "-18.00"} euro`,
-                totalTTC: `${calculateTotal(appointmentDetails.price, appointmentDetails.couverture)} €`,
+                mutuelleAmount: `-${couverture.toFixed(2)} €`,
+                totalTTC: `${total.toFixed(2)} €`,
                 regimeObligatoire: "Régime Obligatoire",
-                regimeObligatoireValue: "-6 euro",
+                regimeObligatoireValue: "-0.00 €",  // Par défaut
             };
         } catch (error) {
-            console.error('Erreur lors de la vérification du code de paiement:', error);
-            // En cas d'erreur, vérifier si nous avons des données de test pour ce code
-            if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA && MOCK_PAYMENT_DATA[code]) {
-                console.log("Utilisation des données simulées de paiement en secours");
-                return MOCK_PAYMENT_DATA[code];
+            console.error('Erreur lors de la récupération des informations de paiement:', error);
+            
+            // En cas d'erreur, essayer les données simulées
+            if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA[code]) {
+                return {
+                    ...MOCK_PAYMENT_DATA[code],
+                    appointmentId: parseInt(code)
+                };
             }
+            
+            throw error;
+        }
+    },
+
+    /**
+     * Télécharge ou ouvre le PDF de la facture selon la plateforme
+     * @param appointmentId ID du rendez-vous
+     * @returns Promise résolue quand le téléchargement ou l'ouverture est terminé
+     */
+    async downloadAndShareInvoice(appointmentId: number): Promise<boolean> {
+        try {
+            console.log(`Téléchargement de la facture pour le rendez-vous ${appointmentId}`);
+            
+            // Construire l'URL du PDF
+            let pdfUrl: string;
+            if (process.env.NODE_ENV !== 'production') {
+                pdfUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.INVOICE_PDF}/${appointmentId}/pdf`;;
+            } else {
+                pdfUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.INVOICE_PDF}/${appointmentId}/pdf`;
+            }
+            
+            // Vérifier si nous sommes sur le web
+            if (Platform.OS === 'web') {
+                console.log("Plateforme web: ouverture du PDF dans un nouvel onglet");
+                
+                // Sur le web, ouvrir le PDF dans un nouvel onglet
+                window.open(pdfUrl, '_blank');
+                return true;
+            } else {
+                // Sur mobile, utiliser expo-file-system et expo-sharing
+                const fileName = `facture_${appointmentId}_${Date.now()}.pdf`;
+                const fileUri = FileSystem.documentDirectory + fileName;
+                
+                // Télécharger le fichier
+                const downloadResult = await FileSystem.downloadAsync(pdfUrl, fileUri);
+                
+                if (downloadResult.status !== 200) {
+                    throw new Error(`Erreur lors du téléchargement: ${downloadResult.status}`);
+                }
+                
+                // Vérifier si le partage est disponible
+                const canShare = await Sharing.isAvailableAsync();
+                if (!canShare) {
+                    throw new Error("Le partage n'est pas disponible sur cet appareil");
+                }
+                
+                // Ouvrir le dialogue de partage
+                await Sharing.shareAsync(fileUri, {
+                    UTI: 'com.adobe.pdf',
+                    mimeType: 'application/pdf',
+                    dialogTitle: 'Enregistrer ou partager votre facture'
+                });
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Erreur lors du téléchargement de la facture:', error);
+            throw error;
+        }
+    },
+    
+    /**
+     * Télécharge ou ouvre le PDF de l'ordonnance selon la plateforme
+     * @param appointmentId ID du rendez-vous
+     * @returns Promise résolue quand le téléchargement ou l'ouverture est terminé
+     */
+    async downloadAndSharePrescription(appointmentId: number): Promise<boolean> {
+        try {
+            console.log(`Téléchargement de l'ordonnance pour le rendez-vous ${appointmentId}`);
+            
+            // Construire l'URL du PDF
+            let pdfUrl: string;
+            if (process.env.NODE_ENV !== 'production') {
+                pdfUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.PRESCRIPTION_PDF}/${appointmentId}/pdf`;
+            } else {
+                pdfUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.PRESCRIPTION_PDF}/${appointmentId}/pdf`;
+            }
+            
+            // Vérifier si nous sommes sur le web
+            if (Platform.OS === 'web') {
+                console.log("Plateforme web: ouverture du PDF dans un nouvel onglet");
+                
+                // Sur le web, ouvrir le PDF dans un nouvel onglet
+                window.open(pdfUrl, '_blank');
+                return true;
+            } else {
+                // Sur mobile, utiliser expo-file-system et expo-sharing
+                const fileName = `ordonnance_${appointmentId}_${Date.now()}.pdf`;
+                const fileUri = FileSystem.documentDirectory + fileName;
+                
+                // Télécharger le fichier
+                const downloadResult = await FileSystem.downloadAsync(pdfUrl, fileUri);
+                
+                if (downloadResult.status !== 200) {
+                    throw new Error(`Erreur lors du téléchargement: ${downloadResult.status}`);
+                }
+                
+                // Vérifier si le partage est disponible
+                const canShare = await Sharing.isAvailableAsync();
+                if (!canShare) {
+                    throw new Error("Le partage n'est pas disponible sur cet appareil");
+                }
+                
+                // Ouvrir le dialogue de partage
+                await Sharing.shareAsync(fileUri, {
+                    UTI: 'com.adobe.pdf',
+                    mimeType: 'application/pdf',
+                    dialogTitle: 'Enregistrer ou partager votre ordonnance'
+                });
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Erreur lors du téléchargement de l\'ordonnance:', error);
             throw error;
         }
     }
 };
-
-/**
- * Fonction utilitaire pour calculer le total à payer après déduction de la mutuelle
- */
-function calculateTotal(price: number = 30, couverture: number = 18): string {
-    const resteApayer = Math.max(0, price - couverture - 6); // Prix - mutuelle - régime obligatoire (fixé à 6)
-    return resteApayer.toFixed(2);
-}
 
 export default ApiService;

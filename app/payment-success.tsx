@@ -1,24 +1,21 @@
 // app/payment-success.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
 import LoadingIndicator from '../components/ui/LoadingIndicator';
 import { Title, Paragraph } from '../components/ui/Typography';
-import PDFModal from '../components/ui/PDFModal';
 import { ROUTES } from '../constants/routes';
+import { ApiService } from '../services/api';
 
 export default function PaymentSuccessScreen() {
     const router = useRouter();
-    const [printing, setPrinting] = useState(false);
+    const { appointmentId } = useLocalSearchParams();
+    const [downloading, setDownloading] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(20);
     const [endTime, setEndTime] = useState(Date.now() + 20000);
-
-    // États pour le PDF
-    const [pdfModalVisible, setPdfModalVisible] = useState(false);
-    const [documentTitle, setDocumentTitle] = useState('');
-    const [documentType, setDocumentType] = useState<'receipt' | 'prescription'>('receipt');
+    const [downloadType, setDownloadType] = useState<string | null>(null);
 
     // Fonction pour mettre à jour le timer
     const updateTimer = () => {
@@ -36,9 +33,8 @@ export default function PaymentSuccessScreen() {
 
     // Effet pour gérer le timer
     useEffect(() => {
-        // Ne démarrer le timer que si nous ne sommes pas en mode impression
-        // Et que le modal PDF n'est pas ouvert
-        if (printing || pdfModalVisible) return;
+        // Ne démarrer le timer que si nous ne sommes pas en mode téléchargement
+        if (downloading) return;
 
         // Mettre à jour immédiatement
         updateTimer();
@@ -52,57 +48,53 @@ export default function PaymentSuccessScreen() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [endTime, printing, pdfModalVisible, router]);
+    }, [endTime, downloading, router]);
 
     // Fonction pour réinitialiser le timer à 20 secondes
     const resetTimer = () => {
         setEndTime(Date.now() + 20000);
     };
 
-    // Fonction pour ouvrir la prévisualisation du document
-    const openDocumentPreview = (type: string) => {
-        // Arrêter le timer pendant que le document est ouvert
-        setPrinting(true);
-
-        if (type === 'reçu') {
-            setDocumentTitle('Reçu de paiement');
-            setDocumentType('receipt');
-        } else {
-            setDocumentTitle('Ordonnance médicale');
-            setDocumentType('prescription');
+    // Fonction pour gérer le téléchargement des documents
+    const handleDownload = async (type: string) => {
+        if (!appointmentId) {
+            Alert.alert(
+                'Erreur',
+                'Identifiant de rendez-vous manquant. Veuillez contacter le secrétariat.',
+                [{ text: 'OK' }]
+            );
+            return;
         }
 
-        setPdfModalVisible(true);
-    };
-
-    // Fonction pour fermer la prévisualisation du document
-    const closeDocumentPreview = () => {
-        setPdfModalVisible(false);
-        setPrinting(false);
-        resetTimer();
-    };
-
-    // Fonction pour gérer "l'impression" (prévisualisation du document)
-    const handlePrint = async (type: string) => {
-        // Mettre en mode impression (ce qui arrête le timer)
-        setPrinting(true);
+        // Mettre en mode téléchargement (ce qui arrête le timer)
+        setDownloading(true);
+        setDownloadType(type);
 
         try {
-            // Simuler un délai d'impression de 1 seconde
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const idNumber = parseInt(appointmentId as string);
+            console.log(`Téléchargement du ${type} pour le rendez-vous ID=${idNumber}`);
+            
+            if (type === 'reçu') {
+                await ApiService.downloadAndShareInvoice(idNumber);
+            } else {
+                await ApiService.downloadAndSharePrescription(idNumber);
+            }
 
-            // Ouvrir la prévisualisation du document
-            openDocumentPreview(type);
-
+            // Réinitialiser après le téléchargement
+            setDownloading(false);
+            setDownloadType(null);
+            resetTimer();
+            
         } catch (error) {
-            console.error(`Erreur lors de l'affichage du ${type}:`, error);
-
-            // IMPORTANT: S'assurer que le mode d'impression est toujours désactivé
-            setPrinting(false);
-
+            console.error(`Erreur lors du téléchargement du ${type}:`, error);
+            
+            // Réinitialiser l'état en cas d'erreur
+            setDownloading(false);
+            setDownloadType(null);
+            
             Alert.alert(
-                'Erreur d\'affichage',
-                `Une erreur est survenue lors de l'affichage du ${type}.`,
+                'Erreur de téléchargement',
+                `Une erreur est survenue lors du téléchargement du ${type}. Veuillez réessayer ou contacter le secrétariat.`,
                 [{
                     text: 'OK',
                     onPress: () => {
@@ -128,29 +120,29 @@ export default function PaymentSuccessScreen() {
 
             {/* Message de succès */}
             <Paragraph className="text-lg text-gray-700 text-center mb-12">
-                Votre reçu est prêt.
+                Vos documents sont prêts à être téléchargés.
             </Paragraph>
 
-            {/* Affichage du timer (petit et discret) - masqué pendant l'impression */}
-            {!printing && !pdfModalVisible && (
+            {/* Affichage du timer (petit et discret) - masqué pendant le téléchargement */}
+            {!downloading && (
                 <Paragraph className="text-sm text-gray-400 text-center mb-8">
                     Retour à l'accueil dans {secondsLeft} secondes
                 </Paragraph>
             )}
 
-            {/* Boutons d'impression */}
-            {!printing ? (
+            {/* Boutons de téléchargement */}
+            {!downloading ? (
                 <View className="flex-row justify-center space-x-4">
                     <Button
-                        title="Imprimer la facture"
-                        onPress={() => handlePrint('reçu')}
+                        title="Télécharger le reçu"
+                        onPress={() => handleDownload('reçu')}
                         variant="secondary"
                         className="px-6"
                     />
 
                     <Button
-                        title="Imprimer l'ordonnance"
-                        onPress={() => handlePrint('ordonnance')}
+                        title="Télécharger l'ordonnance"
+                        onPress={() => handleDownload('ordonnance')}
                         variant="secondary"
                         className="px-6"
                     />
@@ -159,18 +151,10 @@ export default function PaymentSuccessScreen() {
                 <View className="items-center">
                     <LoadingIndicator size="large" />
                     <Text className="text-lg text-gray-700 mt-4">
-                        Préparation en cours...
+                        Téléchargement du {downloadType} en cours...
                     </Text>
                 </View>
             )}
-
-            {/* Modal pour afficher la prévisualisation du document */}
-            <PDFModal
-                visible={pdfModalVisible}
-                documentType={documentType}
-                onClose={closeDocumentPreview}
-                documentTitle={documentTitle}
-            />
         </ScreenLayout>
     );
 }

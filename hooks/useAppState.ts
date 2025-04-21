@@ -106,19 +106,6 @@ export const useAppState = () => {
         setAppointmentVerified(false);
     };
 
-    // Fonction locale pour simuler la vérification du code de paiement
-    const mockVerifyPaymentCode = async (code: string): Promise<PaymentInfo | null> => {
-        // Simule un délai réseau
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // Retourne les données simulées si le code est valide
-        if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA[code]) {
-            return MOCK_PAYMENT_DATA[code];
-        }
-
-        return null;
-    };
-
     // Actions pour le flux de paiement
     const verifyPayment = async (code: string) => {
         setLoading(true);
@@ -129,12 +116,19 @@ export const useAppState = () => {
             let result: PaymentInfo | null;
 
             try {
-                // Utiliser l'API réelle
-                result = await ApiService.verifyPaymentCode(code);
+                // Utiliser l'API réelle avec la nouvelle fonction getPaymentByCode
+                result = await ApiService.getPaymentByCode(code);
             } catch (apiError) {
                 console.warn('API réelle non disponible, utilisation des données simulées:', apiError);
                 // En cas d'échec, utiliser les données simulées pour le développement
-                result = await mockVerifyPaymentCode(code);
+                if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA[code]) {
+                    result = {
+                        ...MOCK_PAYMENT_DATA[code],
+                        appointmentId: parseInt(code)
+                    };
+                } else {
+                    result = null;
+                }
             }
 
             if (result) {

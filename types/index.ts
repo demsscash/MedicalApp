@@ -23,6 +23,7 @@ export type PaymentInfo = {
     totalTTC: string;
     regimeObligatoire: string;
     regimeObligatoireValue: string;
+    id?: string; // ID direct pour les documents PDF
 };
 
 export type PressedButtonType = 'accueil' | 'paiement' | null;
