@@ -142,7 +142,7 @@ export default function PaymentSuccessScreen() {
             {!printing ? (
                 <View className="flex-row justify-center space-x-4">
                     <Button
-                        title="Imprimer le reçu"
+                        title="Imprimer la facture"
                         onPress={() => handlePrint('reçu')}
                         variant="secondary"
                         className="px-6"

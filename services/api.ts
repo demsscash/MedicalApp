@@ -15,7 +15,6 @@ const API_CONFIG = {
     endpoints: {
         VALIDATE_CODE: '/kiosk/validate',
         GET_APPOINTMENT: '/kiosk/appointment',  // Endpoint pour obtenir un rendez-vous avec le code
-        PAYMENT_VERIFY: '/kiosk/payment/verify',
         PAYMENT_PROCESS: '/kiosk/payment/process'
     }
 };
@@ -184,7 +183,7 @@ export const ApiService = {
     },
 
     /**
-     * Vérifie un code de paiement
+     * Vérifie un code de paiement en utilisant l'endpoint GET_APPOINTMENT
      * @param code Code à 6 chiffres pour le paiement
      * @returns Informations de paiement si valide, sinon null
      */
@@ -196,31 +195,32 @@ export const ApiService = {
                 return MOCK_PAYMENT_DATA[code];
             }
 
-            // Sinon, appeler l'API
-            const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.PAYMENT_VERIFY}`, {
-                method: 'POST',
+            // MODIFICATION: Utiliser GET_APPOINTMENT pour vérifier le code de paiement
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${code}`;
+            console.log(`Appelant l'API pour vérifier le paiement avec l'URL: ${url}`);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'GET',
                 headers: {
                     ...API_CONFIG.headers,
                 },
-                body: JSON.stringify({ code }),
             });
 
-            const data = await response.json();
+            const appointmentDetails = await response.json();
 
-            // À adapter selon la réponse réelle de votre API
-            if (!data || !data.success) {
+            if (!appointmentDetails) {
                 return null;
             }
 
-            // Mapper les données de l'API vers le format attendu
+            // Convertir les détails du rendez-vous en informations de paiement
             return {
-                consultation: data.consultation || "Consultation médicale",
-                consultationPrice: data.price || "30.00 euro",
-                mutuelle: data.mutuelle || "Mutuelle Couverte",
-                mutuelleAmount: data.mutuelleAmount || "-18.00 euro",
-                totalTTC: data.totalTTC || "10.00 €",
-                regimeObligatoire: data.regimeObligatoire || "Regime Obligatoire",
-                regimeObligatoireValue: data.regimeObligatoireValue || "-6 euro",
+                consultation: "Consultation médicale",
+                consultationPrice: `${appointmentDetails.price || "30.00"} euro`,
+                mutuelle: "Mutuelle",
+                mutuelleAmount: `${-appointmentDetails.couverture || "-18.00"} euro`,
+                totalTTC: `${calculateTotal(appointmentDetails.price, appointmentDetails.couverture)} €`,
+                regimeObligatoire: "Régime Obligatoire",
+                regimeObligatoireValue: "-6 euro",
             };
         } catch (error) {
             console.error('Erreur lors de la vérification du code de paiement:', error);
@@ -233,5 +233,13 @@ export const ApiService = {
         }
     }
 };
+
+/**
+ * Fonction utilitaire pour calculer le total à payer après déduction de la mutuelle
+ */
+function calculateTotal(price: number = 30, couverture: number = 18): string {
+    const resteApayer = Math.max(0, price - couverture - 6); // Prix - mutuelle - régime obligatoire (fixé à 6)
+    return resteApayer.toFixed(2);
+}
 
 export default ApiService;
