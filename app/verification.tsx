@@ -42,6 +42,7 @@ export default function VerificationScreen() {
 
             try {
                 setLoadingMessage("Vérification du code...");
+                console.log("Vérification du code:", code);
 
                 // Étape 1: Vérifier si le code est valide
                 const isValid = await ApiService.verifyAppointmentCode(code as string);
@@ -59,6 +60,7 @@ export default function VerificationScreen() {
                 setLoadingMessage("Récupération des informations...");
                 try {
                     const details = await ApiService.getAppointmentByCode(code as string);
+                    console.log("Détails du rendez-vous reçus:", details);
 
                     if (details) {
                         setPatientInfo(details);
