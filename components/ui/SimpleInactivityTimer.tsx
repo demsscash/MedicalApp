@@ -26,25 +26,61 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
     const [timeLeft, setTimeLeft] = useState(timeoutDuration);
     const [circleProgress, setCircleProgress] = useState(100); // pourcentage du cercle rempli
 
+    // Stocker toutes les valeurs importantes dans des refs pour éviter les boucles
+    const timeoutDurationRef = useRef(timeoutDuration);
+    const isVisibleRef = useRef(isVisible);
+    const pathNameRef = useRef(pathname);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
     const appStateRef = useRef<AppStateStatus>(AppState.currentState);
     const activityListenerIdRef = useRef<string | null>(null);
+    const isTimerDisabledRef = useRef(disabledRoutes.includes(pathname));
 
     const activity = useActivity();
 
-    // Vérifier si le timer doit être désactivé pour la route actuelle
-    const isTimerDisabled = disabledRoutes.includes(pathname);
+    // Mettre à jour les refs lorsque les props changent
+    useEffect(() => {
+        timeoutDurationRef.current = timeoutDuration;
+    }, [timeoutDuration]);
 
-    // Démarrer le timer de compte à rebours
+    // Mettre à jour isVisibleRef lorsque isVisible change
+    useEffect(() => {
+        isVisibleRef.current = isVisible;
+    }, [isVisible]);
+
+    // Mettre à jour pathNameRef et vérifier si le timer est désactivé
+    useEffect(() => {
+        pathNameRef.current = pathname;
+        const newIsDisabled = disabledRoutes.includes(pathname);
+
+        // Si l'état a changé
+        if (newIsDisabled !== isTimerDisabledRef.current) {
+            isTimerDisabledRef.current = newIsDisabled;
+
+            if (newIsDisabled && isVisible) {
+                // Si on passe à une route désactivée et que le timer est visible, le masquer
+                setIsVisible(false);
+
+                if (countdownTimerRef.current) {
+                    clearInterval(countdownTimerRef.current);
+                    countdownTimerRef.current = null;
+                }
+            } else if (!newIsDisabled && !isVisible) {
+                // Si on passe à une route activée, réinitialiser le timer
+                resetInactivityTimer();
+            }
+        }
+    }, [pathname, disabledRoutes, isVisible]);
+
+    // Fonction pour démarrer le compte à rebours
     const startCountdown = () => {
         // Ne pas démarrer le timer si nous sommes sur une route où il est désactivé
-        if (isTimerDisabled) {
+        if (isTimerDisabledRef.current) {
             return;
         }
 
         setIsVisible(true);
-        setTimeLeft(timeoutDuration);
+        setTimeLeft(timeoutDurationRef.current);
         setCircleProgress(100); // commencer avec le cercle plein
 
         // Démarrer le décompte
@@ -53,20 +89,26 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
         }
 
         countdownTimerRef.current = setInterval(() => {
-            setTimeLeft((prev) => {
+            setTimeLeft(prev => {
                 const newTimeLeft = prev - 1;
 
                 // Calculer le pourcentage de remplissage
-                const newProgress = (newTimeLeft / timeoutDuration) * 100;
+                const newProgress = (newTimeLeft / timeoutDurationRef.current) * 100;
                 setCircleProgress(newProgress);
 
                 if (newTimeLeft <= 0) {
                     // Temps écoulé, rediriger vers l'accueil
                     if (countdownTimerRef.current) {
                         clearInterval(countdownTimerRef.current);
+                        countdownTimerRef.current = null;
                     }
-                    router.push(ROUTES.HOME);
-                    setIsVisible(false);
+
+                    // Utiliser setTimeout pour éviter de modifier l'état pendant le rendu
+                    setTimeout(() => {
+                        router.push(ROUTES.HOME);
+                        setIsVisible(false);
+                    }, 0);
+
                     return 0;
                 }
                 return newTimeLeft;
@@ -74,9 +116,9 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
         }, 1000);
     };
 
-    // Réinitialiser complètement le timer à 30s
+    // Fonction pour réinitialiser le timer à 30s
     const resetTimerToMax = () => {
-        setTimeLeft(timeoutDuration);
+        setTimeLeft(timeoutDurationRef.current);
         setCircleProgress(100);
 
         // Arrêter le timer actuel
@@ -86,20 +128,26 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
 
         // Redémarrer le décompte
         countdownTimerRef.current = setInterval(() => {
-            setTimeLeft((prev) => {
+            setTimeLeft(prev => {
                 const newTimeLeft = prev - 1;
 
                 // Calculer le pourcentage de remplissage
-                const newProgress = (newTimeLeft / timeoutDuration) * 100;
+                const newProgress = (newTimeLeft / timeoutDurationRef.current) * 100;
                 setCircleProgress(newProgress);
 
                 if (newTimeLeft <= 0) {
                     // Temps écoulé, rediriger vers l'accueil
                     if (countdownTimerRef.current) {
                         clearInterval(countdownTimerRef.current);
+                        countdownTimerRef.current = null;
                     }
-                    router.push(ROUTES.HOME);
-                    setIsVisible(false);
+
+                    // Utiliser setTimeout pour éviter de modifier l'état pendant le rendu
+                    setTimeout(() => {
+                        router.push(ROUTES.HOME);
+                        setIsVisible(false);
+                    }, 0);
+
                     return 0;
                 }
                 return newTimeLeft;
@@ -107,60 +155,48 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
         }, 1000);
     };
 
-    // Réinitialiser le timer d'inactivité
+    // Fonction pour réinitialiser le timer d'inactivité
     const resetInactivityTimer = () => {
-        // Si le timer est déjà visible, on le réinitialise à sa valeur maximale
-        if (isVisible) {
+        // Si la route actuelle est désactivée, ne rien faire
+        if (isTimerDisabledRef.current) {
+            return;
+        }
+
+        // Si le timer est visible, réinitialiser à la valeur maximale
+        if (isVisibleRef.current) {
             resetTimerToMax();
         } else {
-            // Le timer n'est pas visible, on prépare son apparition après le délai
+            // Le timer n'est pas visible, préparer l'apparition
 
             // Nettoyer le timer d'inactivité précédent
             if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
             }
 
-            // Ne pas démarrer de nouveau timer si nous sommes sur une route où il est désactivé
-            if (isTimerDisabled) {
-                return;
-            }
-
-            // Démarrer un nouveau timer d'inactivité avec le délai initial
+            // Démarrer un nouveau timer d'inactivité
             inactivityTimerRef.current = setTimeout(() => {
                 startCountdown();
             }, initialDelay * 1000);
         }
     };
 
-    // S'abonner aux événements d'activité
+    // Configurer le gestionnaire d'activité une seule fois
     useEffect(() => {
-        // S'abonner à l'événement d'activité
-        activityListenerIdRef.current = activity.addActivityListener(() => {
-            if (isVisible) {
+        // Fonction pour gérer l'activité
+        const handleActivity = () => {
+            if (isVisibleRef.current) {
                 // Si le timer est visible, le réinitialiser à 30s
                 resetTimerToMax();
             } else {
                 // Sinon, réinitialiser le délai d'inactivité
                 resetInactivityTimer();
             }
-        });
-
-        // Se désabonner à la destruction du composant
-        return () => {
-            if (activityListenerIdRef.current) {
-                activity.removeActivityListener(activityListenerIdRef.current);
-            }
         };
-    }, [isVisible, isTimerDisabled]);
 
-    // Écouter les changements de chemin
-    useEffect(() => {
-        // À chaque changement de route, réinitialiser le timer
-        resetInactivityTimer();
-    }, [pathname]);
+        // S'abonner à l'événement d'activité
+        activityListenerIdRef.current = activity.addActivityListener(handleActivity);
 
-    // Initialiser le timer au montage et configurer les écouteurs d'événements
-    useEffect(() => {
+        // Initialiser le timer au montage
         resetInactivityTimer();
 
         // Surveiller l'état de l'application
@@ -171,8 +207,12 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
             appStateRef.current = nextAppState;
         });
 
+        // Nettoyage à la destruction du composant
         return () => {
-            // Nettoyer les timers
+            if (activityListenerIdRef.current) {
+                activity.removeActivityListener(activityListenerIdRef.current);
+            }
+
             if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
             }
@@ -181,13 +221,12 @@ const SimpleInactivityTimer: React.FC<SimpleInactivityTimerProps> = ({
                 clearInterval(countdownTimerRef.current);
             }
 
-            // Nettoyer les écouteurs
             subscription.remove();
         };
-    }, [isTimerDisabled]);
+    }, []); // Dépendances vides pour n'exécuter qu'une seule fois
 
     // Ne rien afficher si le timer n'est pas visible ou si nous sommes sur la page d'accueil
-    if (!isVisible || isTimerDisabled) {
+    if (!isVisible || isTimerDisabledRef.current) {
         return null;
     }
 
