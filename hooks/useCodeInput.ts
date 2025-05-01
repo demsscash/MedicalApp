@@ -9,7 +9,11 @@ export const useCodeInput = (length: number = DEFAULT_CODE_LENGTH) => {
 
     const handleCodeChange = (newCode: string[]) => {
         setCode(newCode);
-        setIsComplete(newCode.every(digit => digit !== ''));
+
+        // Calculate isComplete first and then set it
+        const completed = newCode.every(digit => digit !== '');
+        console.log('Code completion status:', completed, newCode);
+        setIsComplete(completed);
 
         // Reset validity state when code changes
         setIsValid(null);

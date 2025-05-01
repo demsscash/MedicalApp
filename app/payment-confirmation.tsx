@@ -29,7 +29,7 @@ export default function PaymentConfirmationScreen() {
                 if (result) {
                     setPaymentInfo(result);
                 } else {
-                    // Rediriger en cas d'échec
+                    // Rediriger en cas d'échec avec message d'erreur cohérent
                     router.push({
                         pathname: ROUTES.PAYMENT,
                         params: { error: 'invalidCode' }
@@ -77,7 +77,7 @@ export default function PaymentConfirmationScreen() {
         if (paymentInfo?.appointmentId) {
             router.push({
                 pathname: ROUTES.TPE,
-                params: { 
+                params: {
                     code: code,
                     appointmentId: paymentInfo.appointmentId.toString()
                 }

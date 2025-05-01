@@ -16,8 +16,8 @@ export default function RootLayout() {
           }}
         />
         <SimpleInactivityTimer
-          timeoutDuration={30}
-          warningThreshold={10}
+          timeoutDuration={10}
+          warningThreshold={5}
           initialDelay={5}
           disabledRoutes={[ROUTES.HOME]}
         />

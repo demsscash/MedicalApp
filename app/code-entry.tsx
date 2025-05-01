@@ -1,6 +1,6 @@
 // app/code-entry.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Keyboard } from 'react-native';
+import { View, Keyboard, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import CodeInput from '../components/ui/CodeInput';
@@ -18,6 +18,17 @@ export default function CodeValidationScreen() {
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [errorTitle, setErrorTitle] = useState('');
+
+    // Debug state
+    const [renderCount, setRenderCount] = useState(0);
+
+    // Update render count to track re-renders
+    useEffect(() => {
+        setRenderCount(prev => prev + 1);
+        console.log("Code Entry Screen rendered:", renderCount + 1, "times");
+        console.log("Current code state:", code);
+        console.log("Is complete:", isComplete);
+    }, [code, isComplete]);
 
     // Gérer les erreurs de validation redirigées
     useEffect(() => {
@@ -50,6 +61,17 @@ export default function CodeValidationScreen() {
 
     const closeErrorModal = () => {
         setErrorModalVisible(false);
+    };
+
+    // Debug info renderer
+    const renderDebugInfo = () => {
+        return (
+            <View className="absolute bottom-2 left-2 bg-white p-2 rounded-lg opacity-70">
+                <Text className="text-xs">Complete: {isComplete ? 'Yes' : 'No'}</Text>
+                <Text className="text-xs">Code: {code.join('')}</Text>
+                <Text className="text-xs">Renders: {renderCount}</Text>
+            </View>
+        );
     };
 
     return (
@@ -88,6 +110,9 @@ export default function CodeValidationScreen() {
                 message={errorMessage}
                 onClose={closeErrorModal}
             />
+
+            {/* Debug info (only visible in dev mode) */}
+            {__DEV__ && renderDebugInfo()}
         </ScreenLayout>
     );
 }

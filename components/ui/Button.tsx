@@ -1,5 +1,5 @@
 // components/ui/Button.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, ActivityIndicator, Pressable } from 'react-native';
 import { COLORS } from '../../constants/theme';
 
@@ -26,18 +26,26 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
     const [isPressed, setIsPressed] = useState(false);
 
-    // Styles basés sur la variante et l'état
-    const getButtonClass = () => {
-        if (disabled) return 'bg-[#D3D3D3] px-8 py-4 rounded-full shadow';
+    // Debug logging
+    useEffect(() => {
+        console.log('Button state:', { disabled, variant, isPressed });
+    }, [disabled, variant, isPressed]);
 
-        // Si le bouton est pressé, appliquer le style bleu quel que soit le variant
+    // Styles based on variant and state
+    const getButtonClass = () => {
+        // Force a specific style for disabled state
+        if (disabled) {
+            return 'bg-[#D3D3D3] px-8 py-4 rounded-full shadow';
+        }
+
+        // If the button is pressed, apply the blue style regardless of variant
         if (isPressed) {
             return 'bg-[#4169E1] px-8 py-4 rounded-full shadow';
         }
 
         switch (variant) {
             case 'primary':
-                return 'bg-gradient-to-r from-[#2850F1] to-[#607AF1] px-8 py-4 rounded-full shadow';
+                return 'bg-[#4169E1] px-8 py-4 rounded-full shadow'; // Use solid color instead of gradient
             case 'secondary':
                 return 'bg-white px-8 py-4 rounded-full shadow';
             case 'outline':
@@ -50,7 +58,7 @@ export const Button: React.FC<ButtonProps> = ({
     const getTextClass = () => {
         if (disabled) return 'text-white font-medium text-base';
 
-        // Si le bouton est pressé, toujours utiliser le texte blanc
+        // If button is pressed, always use white text
         if (isPressed) {
             return 'text-white font-medium text-base';
         }

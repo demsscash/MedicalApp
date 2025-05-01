@@ -29,17 +29,23 @@ export const CodeInput: React.FC<CodeInputProps> = ({
         newCode[index] = text;
         onChange(newCode);
 
-        // Auto-focus suivant
+        // Auto-focus next
         if (text.length === 1 && index < codeLength - 1) {
             inputRefs[index + 1].current?.focus();
         } else if (text.length === 0 && index > 0) {
             inputRefs[index - 1].current?.focus();
         }
 
-        // Fermer clavier si tout est rempli
+        // Close keyboard and force re-render if all filled
         const completed = newCode.every((digit) => digit.length === 1);
         if (completed) {
+            console.log("Code entry complete, all digits filled");
             Keyboard.dismiss();
+
+            // Force a re-render of parent components with a small delay
+            setTimeout(() => {
+                onChange([...newCode]);
+            }, 100);
         }
     };
 
