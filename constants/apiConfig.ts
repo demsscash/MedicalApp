@@ -6,17 +6,17 @@ type Environment = 'development' | 'test' | 'production';
 // Configuration par environnement
 const API_CONFIG = {
     development: {
-        baseUrl: 'http://localhost:8000/api',
+        baseUrl: 'https://borne.techfawn.fr/api',
         timeout: 15000,
         debug: true
     },
     test: {
-        baseUrl: 'https://preprod-api.votre-domaine.com/api',
+        baseUrl: 'https://borne.techfawn.fr/api',
         timeout: 10000,
         debug: true
     },
     production: {
-        baseUrl: 'https://api.votre-domaine.com/api',
+        baseUrl: 'https://borne.techfawn.fr/api',
         timeout: 8000,
         debug: false
     }

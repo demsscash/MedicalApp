@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 
 // Configuration de l'API
 const API_CONFIG = {
-    baseUrl: 'http://localhost:8080/api',
+    baseUrl: 'https://borne.techfawn.fr/api',
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
@@ -234,14 +234,13 @@ export const ApiService = {
         }
     },
 
-    // Les autres méthodes restent inchangées
     async getPaymentByCode(code: string): Promise<PaymentInfo | null> {
         try {
             // Utiliser getAppointmentByCode pour récupérer les informations du rendez-vous
             const appointmentDetails = await this.getAppointmentByCode(code);
 
             if (!appointmentDetails || !appointmentDetails.id) {
-                console.error("Impossible de récupérer l'ID du rendez-vous pour le code:", code);
+                console.error("Aucune information valide trouvée pour le code:", code);
                 return null;
             }
 
@@ -266,7 +265,7 @@ export const ApiService = {
         } catch (error) {
             console.error('Erreur lors de la récupération des informations de paiement:', error);
 
-            // En cas d'erreur, essayer les données simulées
+            // En cas d'erreur, essayer les données simulées si le code est valide
             if (VALID_CODES.includes(code) && MOCK_PAYMENT_DATA[code]) {
                 return {
                     ...MOCK_PAYMENT_DATA[code],
@@ -274,10 +273,11 @@ export const ApiService = {
                 };
             }
 
-            throw error;
+            // Si même les données simulées ne sont pas disponibles, retourner null
+            // pour garder un comportement cohérent avec getAppointmentByCode
+            return null;
         }
     },
-
     async downloadAndShareInvoice(appointmentId: number): Promise<boolean> {
         try {
             console.log(`Téléchargement de la facture pour le rendez-vous ${appointmentId}`);

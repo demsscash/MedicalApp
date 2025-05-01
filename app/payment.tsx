@@ -28,7 +28,7 @@ export default function PaymentScreen() {
     useEffect(() => {
         if (error === 'invalidCode') {
             setErrorTitle('Code facture invalide');
-            setErrorMessage('Le code facture que vous avez saisi est incorrect. Veuillez réessayer.');
+            setErrorMessage('Le code que vous avez saisi ne correspond à aucune facture dans notre système.');
             setErrorModalVisible(true);
         } else if (error === 'serverError') {
             setErrorTitle('Erreur de serveur');
@@ -41,35 +41,35 @@ export default function PaymentScreen() {
         const fullCode = getFullCode();
         if (fullCode.length === DEFAULT_CODE_LENGTH) {
             setLoading(true);
-            
+
             try {
                 // Utiliser la nouvelle fonction getPaymentByCode qui se base sur GET_APPOINTMENT
                 console.log("Vérification du code de paiement:", fullCode);
                 const paymentInfo = await ApiService.getPaymentByCode(fullCode);
-                
+
                 if (paymentInfo && paymentInfo.appointmentId) {
                     console.log("Informations de paiement trouvées:", paymentInfo);
                     console.log("ID du rendez-vous:", paymentInfo.appointmentId);
-                    
+
                     // Naviguer vers la page de carte vitale avec le code et l'ID du rendez-vous
                     router.push({
                         pathname: ROUTES.CARTE_VITALE,
-                        params: { 
+                        params: {
                             code: fullCode,
                             appointmentId: paymentInfo.appointmentId.toString()
                         }
                     });
                 } else {
-                    // Aucune information de paiement trouvée
+                    // Aucune information de paiement trouvée - Message cohérent avec celui de verification.tsx
                     console.error("Aucune information de paiement trouvée pour le code:", fullCode);
-                    setErrorTitle('Code invalide');
-                    setErrorMessage('Le code facture que vous avez saisi est incorrect. Veuillez réessayer.');
+                    setErrorTitle('Code facture invalide');
+                    setErrorMessage('Le code que vous avez saisi ne correspond à aucune facture dans notre système.');
                     setErrorModalVisible(true);
                 }
             } catch (error) {
                 console.error("Erreur lors de la vérification du code:", error);
                 setErrorTitle('Erreur serveur');
-                setErrorMessage('Une erreur s\'est produite lors de la vérification. Veuillez réessayer plus tard.');
+                setErrorMessage('Une erreur s\'est produite lors de la vérification. Veuillez réessayer plus tard ou contacter le secrétariat.');
                 setErrorModalVisible(true);
             } finally {
                 setLoading(false);

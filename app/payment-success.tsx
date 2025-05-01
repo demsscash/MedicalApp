@@ -73,7 +73,7 @@ export default function PaymentSuccessScreen() {
         try {
             const idNumber = parseInt(appointmentId as string);
             console.log(`Téléchargement du ${type} pour le rendez-vous ID=${idNumber}`);
-            
+
             if (type === 'reçu') {
                 await ApiService.downloadAndShareInvoice(idNumber);
             } else {
@@ -84,14 +84,14 @@ export default function PaymentSuccessScreen() {
             setDownloading(false);
             setDownloadType(null);
             resetTimer();
-            
+
         } catch (error) {
             console.error(`Erreur lors du téléchargement du ${type}:`, error);
-            
+
             // Réinitialiser l'état en cas d'erreur
             setDownloading(false);
             setDownloadType(null);
-            
+
             Alert.alert(
                 'Erreur de téléchargement',
                 `Une erreur est survenue lors du téléchargement du ${type}. Veuillez réessayer ou contacter le secrétariat.`,
@@ -134,14 +134,14 @@ export default function PaymentSuccessScreen() {
             {!downloading ? (
                 <View className="flex-row justify-center space-x-4">
                     <Button
-                        title="Télécharger le reçu"
+                        title="Imprimer la facture"
                         onPress={() => handleDownload('reçu')}
                         variant="secondary"
                         className="px-6"
                     />
 
                     <Button
-                        title="Télécharger l'ordonnance"
+                        title="Imprimer l'ordonnance"
                         onPress={() => handleDownload('ordonnance')}
                         variant="secondary"
                         className="px-6"
