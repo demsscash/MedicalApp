@@ -40,15 +40,11 @@ export default function MutuelleValidatedScreen() {
 
             {/* Nouveau visuel pour le scan validé */}
             <View className="mb-16 relative items-center">
-                {/* Seulement l'image QR code avec badge de validation */}
-                <View className="relative">
+                {/* Image QR avec les mêmes dimensions que la carte Vitale */}
+                <View className="relative" style={{ width: 264, height: 320, justifyContent: 'center', alignItems: 'center' }}>
                     <Image
                         source={require('../assets/images/qr-code.png')}
-                        style={{
-                            width: 362,
-                            height: 362,
-                            transform: [{ rotate: '15.25deg' }]
-                        }}
+                        style={{ width: 264, height: 264 }}
                         resizeMode="contain"
                     />
 

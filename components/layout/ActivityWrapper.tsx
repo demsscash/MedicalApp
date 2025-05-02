@@ -1,6 +1,6 @@
 // components/layout/ActivityWrapper.tsx
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { TouchableWithoutFeedback, View } from 'react-native';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { TouchableWithoutFeedback, View, Keyboard, AppState } from 'react-native';
 
 // Créer un contexte pour partager les événements d'activité
 type ActivityContextType = {
@@ -25,7 +25,7 @@ type ActivityWrapperProps = {
     children: React.ReactNode;
 };
 
-// Composant wrapper qui détecte les clics
+// Composant wrapper qui détecte les clics et les interactions clavier
 export const ActivityWrapper: React.FC<ActivityWrapperProps> = ({ children }) => {
     // Stocker les écouteurs d'activité
     const [listeners, setListeners] = useState<Record<string, () => void>>({});
@@ -51,6 +51,25 @@ export const ActivityWrapper: React.FC<ActivityWrapperProps> = ({ children }) =>
             return newListeners;
         });
     }, []);
+
+    // Écouter les événements de clavier
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', triggerActivity);
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', triggerActivity);
+
+        // Écouter les changements d'état de l'application
+        const appStateListener = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                triggerActivity();
+            }
+        });
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+            appStateListener.remove();
+        };
+    }, [triggerActivity]);
 
     // Valeur du contexte
     const contextValue: ActivityContextType = {

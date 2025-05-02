@@ -55,24 +55,18 @@ export default function MutuelleScanScreen() {
                 className="mb-16 items-center justify-center"
                 disabled={loading}
             >
-                <View className="relative items-center">
-                    {loading ? (
-                        <LoadingIndicator size="large" />
-                    ) : (
-                        <>
-                            {/* Image QR code avec rotation de 15.25 degrés */}
-                            <Image
-                                source={require('../assets/images/qr-code.png')}
-                                style={{
-                                    width: 362,
-                                    height: 362,
-                                    transform: [{ rotate: '15.25deg' }]
-                                }}
-                                resizeMode="contain"
-                            />
-                        </>
-                    )}
-                </View>
+                {loading ? (
+                    <LoadingIndicator size="large" />
+                ) : (
+                    <View className="relative" style={{ width: 264, height: 320, justifyContent: 'center', alignItems: 'center' }}>
+                        {/* Image QR code avec les mêmes dimensions que la carte Vitale */}
+                        <Image
+                            source={require('../assets/images/qr-code.png')}
+                            style={{ width: 264, height: 264 }}
+                            resizeMode="contain"
+                        />
+                    </View>
+                )}
             </TouchableOpacity>
 
             {/* Bouton "Je n'ai pas de mutuelle" */}

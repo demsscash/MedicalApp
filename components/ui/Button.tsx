@@ -1,7 +1,8 @@
 // components/ui/Button.tsx
 import React, { useState, useEffect } from 'react';
-import { Text, TouchableOpacity, ActivityIndicator, Pressable } from 'react-native';
+import { Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { COLORS } from '../../constants/theme';
+import { useActivity } from '../layout/ActivityWrapper';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline';
 
@@ -25,11 +26,20 @@ export const Button: React.FC<ButtonProps> = ({
     textClassName = '',
 }) => {
     const [isPressed, setIsPressed] = useState(false);
+    const { triggerActivity } = useActivity();
 
     // Debug logging
     useEffect(() => {
         console.log('Button state:', { disabled, variant, isPressed });
     }, [disabled, variant, isPressed]);
+
+    // Gestionnaire d'événement combiné pour le clic et la réinitialisation du timer
+    const handlePress = () => {
+        // Déclencher l'événement d'activité pour réinitialiser le timer
+        triggerActivity();
+        // Appeler la fonction onPress originale
+        onPress();
+    };
 
     // Styles based on variant and state
     const getButtonClass = () => {
@@ -77,12 +87,18 @@ export const Button: React.FC<ButtonProps> = ({
 
     return (
         <TouchableOpacity
-            onPress={onPress}
+            onPress={handlePress}
             disabled={disabled || loading}
             activeOpacity={0.9}
             className={`${getButtonClass()} ${className}`}
-            onPressIn={() => setIsPressed(true)}
-            onPressOut={() => setIsPressed(false)}
+            onPressIn={() => {
+                setIsPressed(true);
+                triggerActivity();
+            }}
+            onPressOut={() => {
+                setIsPressed(false);
+                triggerActivity();
+            }}
         >
             {loading ? (
                 <ActivityIndicator size="small" color={variant === 'primary' ? COLORS.white : COLORS.primary} />

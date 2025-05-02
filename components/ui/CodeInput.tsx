@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, TextInput, Keyboard } from 'react-native';
+import { useActivity } from '../layout/ActivityWrapper';
 
 type CodeInputProps = {
     codeLength: number;
@@ -20,11 +21,16 @@ export const CodeInput: React.FC<CodeInputProps> = ({
         .fill(0)
         .map(() => useRef<TextInput>(null));
 
+    const { triggerActivity } = useActivity();
+
     useEffect(() => {
         inputRefs[0]?.current?.focus();
     }, []);
 
     const handleCodeChange = (text: string, index: number) => {
+        // Déclencher l'activité à chaque changement de texte
+        triggerActivity();
+
         const newCode = [...value];
         newCode[index] = text;
         onChange(newCode);
@@ -60,6 +66,8 @@ export const CodeInput: React.FC<CodeInputProps> = ({
                     maxLength={1}
                     value={digit}
                     onChangeText={(text) => handleCodeChange(text, index)}
+                    onFocus={() => triggerActivity()}
+                    onBlur={() => triggerActivity()}
                     selectTextOnFocus={true}
                 />
             ))}
