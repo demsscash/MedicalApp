@@ -12,11 +12,12 @@
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.demsscash.MedicalApp"
+      "package": "com.demsscash.Medicaligne"
     },
     "web": {
       "bundler": "metro",
