@@ -61,11 +61,22 @@ export default function AppointmentConfirmedScreen() {
                 {/* Cartes d'information */}
                 <CenteredCard text="Rendez-vous validé" className="w-full mb-4" />
                 <CenteredCard text="Secrétaire informée" className="w-full mb-4" />
-                <HighlightCard
-                    title="Votre consultation aura lieu dans la salle"
-                    highlight="Consultation 1"
-                    className="w-full mb-8"
-                />
+
+                {/* Nouvelles informations sur la salle */}
+                <Card className="w-full mb-8 bg-white rounded-xl p-5 shadow">
+                    <Text className="text-base text-gray-800 text-center mb-2">
+                        Votre consultation se déroulera dans
+                    </Text>
+                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-1">
+                        La salle d'attente 01
+                    </Text>
+                    <Text className="text-base text-gray-800 text-center">
+                        Puis en
+                    </Text>
+                    <Text className="text-xl font-semibold text-[#4169E1] text-center">
+                        salle de consultation 04
+                    </Text>
+                </Card>
 
                 {/* Informations financières si disponibles */}
                 {hasFinancialInfo && (
