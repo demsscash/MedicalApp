@@ -1,16 +1,16 @@
-// app/carte-vitale.tsx
+// app/checkin-carte-vitale.tsx
 import React, { useState } from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
 import LoadingIndicator from '../components/ui/LoadingIndicator';
-import { Heading } from '../components/ui/Typography';
+import { Heading, Paragraph } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 import { readHealthCard } from '../utils';
 import { useActivity } from '../components/layout/ActivityWrapper';
 
-export default function CarteVitaleScreen() {
+export default function CheckinCarteVitaleScreen() {
     const router = useRouter();
     const { code } = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
@@ -25,12 +25,13 @@ export default function CarteVitaleScreen() {
 
         try {
             // Simuler la lecture de la carte Vitale
+            // Ceci est un placeholder pour le système réel de lecture
             await readHealthCard();
 
-            // Naviguer vers l'écran de carte Vitale validée
+            // Naviguer vers l'écran de carte Vitale validée du check-in
             router.push({
-                pathname: ROUTES.CARTE_VITALE_VALIDATED,
-                params: { code: code }
+                pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
+                params: { code }
             });
         } catch (error) {
             console.error('Erreur lors de la lecture de la carte vitale:', error);
@@ -43,20 +44,24 @@ export default function CarteVitaleScreen() {
         // Déclencher l'événement d'activité
         triggerActivity();
 
-        // Naviguer vers la page de scan de mutuelle même sans carte Vitale
+        // Si pas de carte, aller directement à la vérification
         router.push({
-            pathname: ROUTES.MUTUELLE_SCAN,
-            params: { code: code }
+            pathname: ROUTES.VERIFICATION,
+            params: { code }
         });
     };
 
     return (
         <ScreenLayout>
-            <Heading className="mb-12 text-center">
+            <Heading className="mb-8 text-center">
                 Merci d'insérer votre{"\n"}carte vitale
             </Heading>
 
-            {/* Image de la carte Vitale et du lecteur avec indicateur de chargement si besoin */}
+            <Paragraph className="mb-6 text-center">
+                Pour vérifier votre identité et faciliter votre prise en charge
+            </Paragraph>
+
+            {/* Image de la carte Vitale et du lecteur */}
             <TouchableOpacity
                 onPress={handleCarteVitale}
                 onPressIn={triggerActivity} // Ajout de l'événement onPressIn

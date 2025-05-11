@@ -46,9 +46,9 @@ export default function CodeValidationScreen() {
     const handleValidation = () => {
         const fullCode = getFullCode();
         if (fullCode.length === DEFAULT_CODE_LENGTH) {
-            // Navigation vers la page de vérification avec le code
+            // Navigation vers la page de lecture de carte Vitale avec le code
             router.push({
-                pathname: ROUTES.VERIFICATION,
+                pathname: ROUTES.CHECKIN_CARTE_VITALE,
                 params: { code: fullCode }
             });
         } else {

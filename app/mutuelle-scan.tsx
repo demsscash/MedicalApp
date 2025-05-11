@@ -8,13 +8,18 @@ import LoadingIndicator from '../components/ui/LoadingIndicator';
 import { Title } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 import { readHealthCard } from '../utils';
+import { useActivity } from '../components/layout/ActivityWrapper';
 
 export default function MutuelleScanScreen() {
     const router = useRouter();
     const { code } = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
+    const { triggerActivity } = useActivity(); // Ajout du hook useActivity
 
     const handleMutuelleCard = async () => {
+        // Déclencher l'événement d'activité
+        triggerActivity();
+
         // Montrer l'indicateur de chargement
         setLoading(true);
 
@@ -35,6 +40,9 @@ export default function MutuelleScanScreen() {
     };
 
     const handleNoMutuelle = () => {
+        // Déclencher l'événement d'activité
+        triggerActivity();
+
         // Naviguer directement vers la page de confirmation de paiement sans carte Mutuelle
         router.push({
             pathname: ROUTES.PAYMENT_CONFIRMATION,
@@ -51,6 +59,8 @@ export default function MutuelleScanScreen() {
             {/* Nouveau visuel pour le scan de la mutuelle */}
             <TouchableOpacity
                 onPress={handleMutuelleCard}
+                onPressIn={triggerActivity} // Ajout de l'événement onPressIn
+                onPressOut={triggerActivity} // Ajout de l'événement onPressOut
                 activeOpacity={0.8}
                 className="mb-16 items-center justify-center"
                 disabled={loading}

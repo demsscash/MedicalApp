@@ -136,7 +136,7 @@ export default function VerificationScreen() {
                         <InfoCard label="Heure du rendez-vous" value={patientInfo.heureRendezVous} />
 
                         {/* Informations financières */}
-                        {patientInfo.price !== undefined && (
+                        {/*patientInfo.price !== undefined && (
                             <Card className="mt-6 mb-2 bg-white rounded-xl p-4 shadow">
                                 <Paragraph className="text-center text-base mb-2 text-gray-600">
                                     Informations de tarification
@@ -158,7 +158,7 @@ export default function VerificationScreen() {
                                     </View>
                                 )}
                             </Card>
-                        )}
+                        )*/}
                     </View>
                 )
             )}

@@ -3,6 +3,8 @@
 export type AppRoutes = {
     HOME: '/',
     CODE_ENTRY: '/code-entry',
+    CHECKIN_CARTE_VITALE: '/checkin-carte-vitale',
+    CHECKIN_CARTE_VITALE_VALIDATED: '/checkin-carte-vitale-validated',
     VERIFICATION: '/verification',
     APPOINTMENT_CONFIRMED: '/appointment-confirmed',
     PAYMENT: '/payment',
@@ -19,6 +21,8 @@ export type AppRoutes = {
 export const ROUTES: AppRoutes = {
     HOME: '/',
     CODE_ENTRY: '/code-entry',
+    CHECKIN_CARTE_VITALE: '/checkin-carte-vitale',
+    CHECKIN_CARTE_VITALE_VALIDATED: '/checkin-carte-vitale-validated',
     VERIFICATION: '/verification',
     APPOINTMENT_CONFIRMED: '/appointment-confirmed',
     PAYMENT: '/payment',
