@@ -6,10 +6,12 @@ import ScreenLayout from '../components/layout/ScreenLayout';
 import CodeInput from '../components/ui/CodeInput';
 import Button from '../components/ui/Button';
 import ErrorModal from '../components/ui/ErrorModal';
+import LoadingIndicator from '../components/ui/LoadingIndicator';
 import { Heading, Paragraph, SubHeading } from '../components/ui/Typography';
 import { ROUTES } from '../constants/routes';
 import { DEFAULT_CODE_LENGTH } from '../constants/mockData';
 import useCodeInput from '../hooks/useCodeInput';
+import { ApiService } from '../services/api';
 
 export default function CodeValidationScreen() {
     const router = useRouter();
@@ -18,6 +20,7 @@ export default function CodeValidationScreen() {
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [errorTitle, setErrorTitle] = useState('');
+    const [loading, setLoading] = useState(false);
 
     // Debug state
     const [renderCount, setRenderCount] = useState(0);
@@ -43,14 +46,36 @@ export default function CodeValidationScreen() {
         }
     }, [error]);
 
-    const handleValidation = () => {
+    const handleValidation = async () => {
         const fullCode = getFullCode();
         if (fullCode.length === DEFAULT_CODE_LENGTH) {
-            // Navigation vers la page de lecture de carte Vitale avec le code
-            router.push({
-                pathname: ROUTES.CHECKIN_CARTE_VITALE,
-                params: { code: fullCode }
-            });
+            // Afficher l'indicateur de chargement pendant la vérification
+            setLoading(true);
+
+            try {
+                // Vérifier d'abord si le code est valide
+                const isValid = await ApiService.verifyAppointmentCode(fullCode);
+
+                if (isValid) {
+                    // Si le code est valide, aller à la lecture de carte Vitale
+                    router.push({
+                        pathname: ROUTES.CHECKIN_CARTE_VITALE,
+                        params: { code: fullCode }
+                    });
+                } else {
+                    // Si le code est invalide, afficher une erreur
+                    setErrorTitle('Code invalide');
+                    setErrorMessage('Le code que vous avez saisi ne correspond à aucun rendez-vous dans notre système.');
+                    setErrorModalVisible(true);
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification du code:', error);
+                setErrorTitle('Erreur de serveur');
+                setErrorMessage('Une erreur s\'est produite lors de la vérification. Veuillez réessayer plus tard ou contacter le secrétariat.');
+                setErrorModalVisible(true);
+            } finally {
+                setLoading(false);
+            }
         } else {
             Keyboard.dismiss();
             setErrorTitle('Code incomplet');
@@ -73,6 +98,14 @@ export default function CodeValidationScreen() {
             </View>
         );
     };
+
+    if (loading) {
+        return (
+            <ScreenLayout>
+                <LoadingIndicator text="Vérification en cours..." />
+            </ScreenLayout>
+        );
+    }
 
     return (
         <ScreenLayout>

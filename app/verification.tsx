@@ -41,46 +41,24 @@ export default function VerificationScreen() {
             }
 
             try {
-                setLoadingMessage("Vérification du code...");
-                console.log("Vérification du code:", code);
-
-                // Étape 1: Vérifier si le code est valide
-                const isValid = await ApiService.verifyAppointmentCode(code as string);
-                console.log("Résultat de la vérification du code:", isValid);
-
-                if (!isValid) {
-                    setLoading(false);
-                    setErrorTitle('Code invalide');
-                    setErrorMessage('Le code que vous avez saisi ne correspond à aucun rendez-vous dans notre système.');
-                    setErrorModalVisible(true);
-                    return;
-                }
-
-                // Étape 2: Récupérer les informations du rendez-vous avec le même code
                 setLoadingMessage("Récupération des informations...");
-                try {
-                    const details = await ApiService.getAppointmentByCode(code as string);
-                    console.log("Détails du rendez-vous reçus:", details);
+                console.log("Récupération des détails du rendez-vous pour le code:", code);
 
-                    if (details) {
-                        setPatientInfo(details);
-                        setLoading(false);
-                    } else {
-                        throw new Error('Détails du rendez-vous non disponibles');
-                    }
-                } catch (detailsError) {
-                    console.error('Erreur lors de la récupération des détails:', detailsError);
+                // Le code a déjà été vérifié, récupérer directement les informations du rendez-vous
+                const details = await ApiService.getAppointmentByCode(code as string);
+                console.log("Détails du rendez-vous reçus:", details);
+
+                if (details) {
+                    setPatientInfo(details);
                     setLoading(false);
-                    setErrorTitle('Erreur de serveur');
-                    setErrorMessage('Une erreur s\'est produite lors de la récupération des détails. Veuillez réessayer plus tard ou contacter le secrétariat.');
-                    setErrorModalVisible(true);
+                } else {
+                    throw new Error('Détails du rendez-vous non disponibles');
                 }
-
             } catch (error) {
-                console.error('Erreur globale lors de la vérification:', error);
+                console.error('Erreur lors de la récupération des détails:', error);
                 setLoading(false);
                 setErrorTitle('Erreur de serveur');
-                setErrorMessage('Une erreur s\'est produite lors de la vérification. Veuillez réessayer plus tard ou contacter le secrétariat.');
+                setErrorMessage('Une erreur s\'est produite lors de la récupération des détails. Veuillez réessayer plus tard ou contacter le secrétariat.');
                 setErrorModalVisible(true);
             }
         };

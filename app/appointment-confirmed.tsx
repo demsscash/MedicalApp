@@ -79,7 +79,7 @@ export default function AppointmentConfirmedScreen() {
                 </Card>
 
                 {/* Informations financières si disponibles */}
-                {hasFinancialInfo && (
+                {/*hasFinancialInfo && (
                     <Card className="w-full mb-12 bg-white rounded-xl p-5 shadow">
                         <SubHeading className="text-center mb-4">Informations de tarification</SubHeading>
 
@@ -98,7 +98,7 @@ export default function AppointmentConfirmedScreen() {
                             <Text className="text-xl font-bold text-[#4169E1]">{resteToPay} €</Text>
                         </View>
                     </Card>
-                )}
+                )*/}
 
                 {/* Bouton de retour */}
                 <Button
