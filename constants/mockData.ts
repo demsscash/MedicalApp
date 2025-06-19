@@ -45,5 +45,5 @@ export const MOCK_PAYMENT_DATA = {
     }
 };
 
-export const DEFAULT_CODE_LENGTH = 6;
+export const DEFAULT_CODE_LENGTH = 7;
 export const VALID_CODES = ['123456', '460163'];
