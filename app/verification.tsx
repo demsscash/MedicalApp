@@ -45,6 +45,7 @@ export default function VerificationScreen() {
                 console.log("Récupération des détails du rendez-vous pour le code:", code);
 
                 // Le code a déjà été vérifié, récupérer directement les informations du rendez-vous
+                // Cette méthode récupère maintenant aussi les informations de salle
                 const details = await ApiService.getAppointmentByCode(code as string);
                 console.log("Détails du rendez-vous reçus:", details);
 
@@ -66,7 +67,7 @@ export default function VerificationScreen() {
         verifyAppointment();
     }, [code, router]);
 
-    // Redirection vers la page suivante après vérification réussie
+    // Redirection vers la page suivante après vérification réussie avec toutes les informations
     useEffect(() => {
         if (patientInfo && patientInfo.verified && !loading) {
             // Timer avant de passer à l'écran suivant (pour que l'utilisateur puisse voir les informations)
@@ -76,7 +77,11 @@ export default function VerificationScreen() {
                     params: {
                         name: patientInfo.nom,
                         price: patientInfo.price?.toString() || '0',
-                        couverture: patientInfo.couverture?.toString() || '0'
+                        couverture: patientInfo.couverture?.toString() || '0',
+                        // Nouvelles informations de salle dynamiques
+                        salleConsultation: patientInfo.salleConsultation || '',
+                        salleAttente: patientInfo.salleAttente || '',
+                        medecin: patientInfo.medecin || ''
                     }
                 });
             }, 3000);
@@ -113,7 +118,18 @@ export default function VerificationScreen() {
                         <InfoCard label="Date de rendez-vous" value={patientInfo.dateRendezVous} />
                         <InfoCard label="Heure du rendez-vous" value={patientInfo.heureRendezVous} />
 
-                        {/* Informations financières */}
+                        {/* Informations de salle (si disponibles) 
+                        {patientInfo.medecin && (
+                            <InfoCard label="Médecin" value={patientInfo.medecin} />
+                        )}
+                        {patientInfo.salleAttente && (
+                            <InfoCard label="Salle d'attente" value={patientInfo.salleAttente} />
+                        )}
+                        {patientInfo.salleConsultation && (
+                            <InfoCard label="Salle de consultation" value={patientInfo.salleConsultation} />
+                        )}*/}
+
+                        {/* Informations financières (optionnelles, commentées par défaut) */}
                         {/*patientInfo.price !== undefined && (
                             <Card className="mt-6 mb-2 bg-white rounded-xl p-4 shadow">
                                 <Paragraph className="text-center text-base mb-2 text-gray-600">

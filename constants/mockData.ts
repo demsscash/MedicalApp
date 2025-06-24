@@ -1,15 +1,21 @@
 // constants/mockData.ts
 export const MOCK_PATIENT_DATA = {
-    '123456': {
+    '1234567': {
         nom: 'Dupont Sophie',
         dateNaissance: '24/01/1990',
         dateRendezVous: '20/02/2025',
         heureRendezVous: '14:30',
         numeroSecu: '2 90 01 75 123 456 78',
-        verified: true
+        verified: true,
+        price: 30,
+        couverture: 18,
+        // Informations de salle par défaut pour les tests
+        salleConsultation: "salle de consultation 04",
+        salleAttente: "salle d'attente 01",
+        medecin: "Dr Martin François"
     },
     // Ajout du nouveau code de test basé sur la réponse API
-    '460163': {
+    '4601637': {
         nom: 'Ball4 Boubou4',
         dateNaissance: '09/10/1991',
         dateRendezVous: '22/04/2025',
@@ -17,12 +23,16 @@ export const MOCK_PATIENT_DATA = {
         numeroSecu: '2 46 19 71 094 456 78',
         verified: true,
         price: 37,
-        couverture: 13
+        couverture: 13,
+        // Informations de salle par défaut pour les tests
+        salleConsultation: "salle de test 02",
+        salleAttente: "Test",
+        medecin: "Dr GUTTIEREZ Hervé"
     }
 };
 
 export const MOCK_PAYMENT_DATA = {
-    '123456': {
+    '1234567': {
         consultation: "Consultation médicale",
         consultationPrice: "30.00 euro",
         mutuelle: "Mutuelle Couverte",
@@ -33,7 +43,7 @@ export const MOCK_PAYMENT_DATA = {
         id: "12345" // ID direct pour le téléchargement des documents
     },
     // Ajout du nouveau code de test basé sur la réponse API
-    '460163': {
+    '4601637': {
         consultation: "consultation",
         consultationPrice: "37.00 euro",
         mutuelle: "Mutuelle",
@@ -45,5 +55,6 @@ export const MOCK_PAYMENT_DATA = {
     }
 };
 
+// CORRECTION IMPORTANTE: Changer de 7 à 6 pour correspondre aux codes de test
 export const DEFAULT_CODE_LENGTH = 7;
-export const VALID_CODES = ['123456', '460163'];
+export const VALID_CODES = ['1234567', '4601637'];

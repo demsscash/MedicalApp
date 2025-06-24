@@ -1,5 +1,5 @@
 // services/api.ts
-import { PatientInfo, PaymentInfo } from '../types';
+import { PatientInfo, PaymentInfo, RoomInfo } from '../types';
 import { MOCK_PATIENT_DATA, VALID_CODES, MOCK_PAYMENT_DATA } from '../constants/mockData';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -16,6 +16,7 @@ const API_CONFIG = {
     endpoints: {
         VALIDATE_CODE: '/kiosk/validate',
         GET_APPOINTMENT: '/kiosk/appointment',
+        ROOM_PROGRAMMING: '/kiosk/programmation-salle/appointment',
         INVOICE_PDF: '/kiosk/invoices',
         PRESCRIPTION_PDF: '/kiosk/prescriptions'
     }
@@ -125,7 +126,55 @@ export const ApiService = {
     },
 
     /**
-     * Récupère les données de rendez-vous complètes par code
+     * Récupère les informations de programmation de salle pour un rendez-vous
+     */
+    async getRoomInfoByAppointment(appointmentId: number): Promise<RoomInfo | null> {
+        console.log("Récupération des informations de salle pour le rendez-vous:", appointmentId);
+
+        try {
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.ROOM_PROGRAMMING}/${appointmentId}`;
+            console.log(`Appel API programmation salle: ${url}`);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'GET',
+                headers: API_CONFIG.headers,
+            });
+
+            const roomData = await response.json();
+            console.log("Réponse de l'API programmation salle:", roomData);
+
+            // L'API retourne un tableau, prendre le premier élément
+            if (Array.isArray(roomData) && roomData.length > 0) {
+                return roomData[0];
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des informations de salle:', error);
+            // Retourner des données par défaut en cas d'erreur
+            return {
+                id: appointmentId,
+                date: new Date().toISOString(),
+                medecin: {
+                    nom: "Dr Martin François",
+                    prenom: null
+                },
+                etat: "Disponible",
+                remarque: "",
+                salle: {
+                    id: 1,
+                    numero: "salle de consultation 04",
+                    salleAttentes: [{
+                        id: 1,
+                        nom: "salle d'attente 01"
+                    }]
+                }
+            };
+        }
+    },
+
+    /**
+     * Récupère les données de rendez-vous complètes par code avec informations de salle
      */
     async getAppointmentByCode(code: string): Promise<PatientInfo | null> {
         console.log("Récupération des données du rendez-vous pour le code:", code);
@@ -178,7 +227,27 @@ export const ApiService = {
                     numeroSecu = "0 00 00 00 000 000 00";
                 }
 
-                const result = {
+                // Récupérer les informations de salle si l'ID du rendez-vous est disponible
+                let salleConsultation = "salle de consultation 04";
+                let salleAttente = "salle d'attente 01";
+                let medecin = "Dr Martin François";
+
+                if (appointmentDetails.id) {
+                    try {
+                        const roomInfo = await this.getRoomInfoByAppointment(appointmentDetails.id);
+                        if (roomInfo) {
+                            salleConsultation = roomInfo.salle.numero;
+                            salleAttente = roomInfo.salle.salleAttentes.length > 0
+                                ? roomInfo.salle.salleAttentes[0].nom
+                                : "salle d'attente 01";
+                            medecin = roomInfo.medecin.nom;
+                        }
+                    } catch (roomError) {
+                        console.warn("Erreur lors de la récupération des informations de salle, utilisation des valeurs par défaut:", roomError);
+                    }
+                }
+
+                const result: PatientInfo = {
                     id: appointmentDetails.id,
                     nom: fullName.trim() || "Patient",
                     dateNaissance: patientInfo.date_naissance ? new Date(patientInfo.date_naissance).toLocaleDateString('fr-FR') : "01/01/1990",
@@ -188,10 +257,14 @@ export const ApiService = {
                     verified: true,
                     price: appointmentDetails.price || 0,
                     couverture: appointmentDetails.couverture || 0,
-                    status: appointmentDetails.status || "validated"
+                    status: appointmentDetails.status || "validated",
+                    // Nouvelles propriétés dynamiques
+                    salleConsultation: salleConsultation,
+                    salleAttente: salleAttente,
+                    medecin: medecin
                 };
 
-                console.log("Données formatées:", result);
+                console.log("Données formatées avec informations de salle:", result);
                 return result;
             } catch (apiError) {
                 console.warn("Erreur API détails, utilisation des données locales:", apiError);
@@ -207,7 +280,11 @@ export const ApiService = {
                         price: mockData.price || 49,
                         couverture: mockData.couverture || 10,
                         status: "validated",
-                        id: parseInt(code)
+                        id: parseInt(code),
+                        // Données de salle par défaut pour les tests
+                        salleConsultation: "salle de consultation 04",
+                        salleAttente: "salle d'attente 01",
+                        medecin: "Dr Martin François"
                     };
                 }
 
@@ -226,7 +303,11 @@ export const ApiService = {
                     price: mockData.price || 49,
                     couverture: mockData.couverture || 10,
                     status: "validated",
-                    id: parseInt(code)
+                    id: parseInt(code),
+                    // Données de salle par défaut pour les tests
+                    salleConsultation: "salle de consultation 04",
+                    salleAttente: "salle d'attente 01",
+                    medecin: "Dr Martin François"
                 };
             }
 
@@ -278,6 +359,7 @@ export const ApiService = {
             return null;
         }
     },
+
     async downloadAndShareInvoice(appointmentId: number): Promise<boolean> {
         try {
             console.log(`Téléchargement de la facture pour le rendez-vous ${appointmentId}`);

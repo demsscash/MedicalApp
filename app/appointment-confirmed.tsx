@@ -16,13 +16,25 @@ export default function AppointmentConfirmedScreen() {
     const navigation = useNavigation();
     const router = useRouter();
     const { resetState } = useAppState();
-    const { name, price, couverture } = useLocalSearchParams();
+    const {
+        name,
+        price,
+        couverture,
+        salleConsultation,
+        salleAttente,
+        medecin
+    } = useLocalSearchParams();
 
     // Calculer le reste à payer si les paramètres sont disponibles
     const priceValue = price ? parseFloat(price as string) : 0;
     const couvertureValue = couverture ? parseFloat(couverture as string) : 0;
     const resteToPay = Math.max(0, priceValue - couvertureValue);
     const hasFinancialInfo = priceValue > 0;
+
+    // Valeurs par défaut si les paramètres ne sont pas fournis
+    const salleConsultationText = (salleConsultation as string) || "salle de consultation 04";
+    const salleAttenteText = (salleAttente as string) || "salle d'attente 01";
+    const medecinText = (medecin as string) || "Dr Martin François";
 
     // 🔒 Bloquer le retour gestuel (iOS) + cacher le header natif si présent
     useLayoutEffect(() => {
@@ -62,23 +74,31 @@ export default function AppointmentConfirmedScreen() {
                 <CenteredCard text="Rendez-vous validé" className="w-full mb-4" />
                 <CenteredCard text="Secrétaire informée" className="w-full mb-4" />
 
-                {/* Nouvelles informations sur la salle */}
+                {/* Informations dynamiques sur les salles et le médecin */}
                 <Card className="w-full mb-8 bg-white rounded-xl p-5 shadow">
                     <Text className="text-base text-gray-800 text-center mb-2">
-                        Votre consultation se déroulera dans
+                        Votre consultation se déroulera avec
                     </Text>
-                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-1">
-                        La salle d'attente 01
+                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-3">
+                        {medecinText}
                     </Text>
-                    <Text className="text-base text-gray-800 text-center">
-                        Puis en
+
+                    <Text className="text-base text-gray-800 text-center mb-1">
+                        Veuillez patienter en
+                    </Text>
+                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-3">
+                        {salleAttenteText}
+                    </Text>
+
+                    <Text className="text-base text-gray-800 text-center mb-1">
+                        Puis rendez-vous en
                     </Text>
                     <Text className="text-xl font-semibold text-[#4169E1] text-center">
-                        salle de consultation 04
+                        {salleConsultationText}
                     </Text>
                 </Card>
 
-                {/* Informations financières si disponibles */}
+                {/* Informations financières si disponibles (optionnelles, commentées par défaut) */}
                 {/*hasFinancialInfo && (
                     <Card className="w-full mb-12 bg-white rounded-xl p-5 shadow">
                         <SubHeading className="text-center mb-4">Informations de tarification</SubHeading>

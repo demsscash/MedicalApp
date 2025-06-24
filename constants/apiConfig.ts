@@ -37,6 +37,8 @@ export const API = {
         CONFIRM_APPOINTMENT: '/appointments/confirm',
         PAYMENT_VERIFY: '/payments/verify',
         PAYMENT_PROCESS: '/payments/process',
+        // Nouveau endpoint pour les salles
+        ROOM_PROGRAMMING: '/kiosk/programmation-salle/appointment',
     },
     // En-têtes communs pour toutes les requêtes
     headers: {

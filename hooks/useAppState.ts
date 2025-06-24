@@ -58,23 +58,28 @@ export const useAppState = () => {
         }
     };
 
-    // Action pour récupérer les détails du rendez-vous par code
+    // Action pour récupérer les détails du rendez-vous par code (avec informations de salle)
     const fetchAppointmentDetails = async (code: string) => {
         setLoading(true);
         try {
             let details: PatientInfo | null;
             try {
+                // Cette méthode récupère maintenant aussi les informations de salle
                 details = await ApiService.getAppointmentByCode(code);
             } catch (apiError) {
                 console.warn('API de détails non disponible, utilisation de données simulées', apiError);
-                // Simuler les détails du rendez-vous
+                // Simuler les détails du rendez-vous avec informations de salle
                 const mockData = VALID_CODES.length > 0 && MOCK_PATIENT_DATA[code];
                 if (mockData) {
                     details = {
                         ...mockData,
-                        price: 49,
-                        couverture: 10,
-                        status: "validated"
+                        price: mockData.price || 49,
+                        couverture: mockData.couverture || 10,
+                        status: "validated",
+                        // Les informations de salle sont maintenant incluses dans MOCK_PATIENT_DATA
+                        salleConsultation: mockData.salleConsultation || "salle de consultation 04",
+                        salleAttente: mockData.salleAttente || "salle d'attente 01",
+                        medecin: mockData.medecin || "Dr Martin François"
                     };
                 } else {
                     details = null;
