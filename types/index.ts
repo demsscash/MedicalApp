@@ -53,3 +53,12 @@ export type RoomInfo = {
 export type PressedButtonType = 'accueil' | 'paiement' | null;
 
 export type CodeInputRef = React.RefObject<TextInput>;
+
+// NOUVEAUX TYPES pour la recherche personnelle
+export type PersonalSearchFormData = {
+    nom: string;
+    prenom: string;
+    dateNaissance: string; // Format DD/MM/YYYY pour l'affichage
+};
+
+export type CheckInMethodType = 'code' | 'personal' | null;

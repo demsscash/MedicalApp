@@ -1,5 +1,5 @@
 // app/checkin-carte-vitale.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
@@ -12,27 +12,50 @@ import { useActivity } from '../components/layout/ActivityWrapper';
 
 export default function CheckinCarteVitaleScreen() {
     const router = useRouter();
-    const { code } = useLocalSearchParams();
+    const { code, appointmentId, fromPersonalSearch } = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
-    const { triggerActivity } = useActivity(); // Ajout du hook useActivity
+    const { triggerActivity } = useActivity();
+
+    // Vérifier d'où vient l'utilisateur pour ajuster le comportement
+    const isFromPersonalSearch = fromPersonalSearch === 'true';
+
+    useEffect(() => {
+        console.log('CheckinCarteVitale - Paramètres reçus:', {
+            code,
+            appointmentId,
+            fromPersonalSearch: isFromPersonalSearch
+        });
+    }, [code, appointmentId, isFromPersonalSearch]);
 
     const handleCarteVitale = async () => {
-        // Déclencher l'événement d'activité
         triggerActivity();
-
-        // Montrer l'indicateur de chargement
         setLoading(true);
 
         try {
             // Simuler la lecture de la carte Vitale
-            // Ceci est un placeholder pour le système réel de lecture
             await readHealthCard();
 
             // Naviguer vers l'écran de carte Vitale validée du check-in
-            router.push({
-                pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
-                params: { code }
-            });
+            if (isFromPersonalSearch && appointmentId) {
+                // Si on vient de la recherche personnelle, utiliser l'appointmentId
+                router.push({
+                    pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
+                    params: {
+                        appointmentId: appointmentId,
+                        fromPersonalSearch: 'true'
+                    }
+                });
+            } else if (code) {
+                // Si on vient du flux traditionnel avec code
+                router.push({
+                    pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
+                    params: { code }
+                });
+            } else {
+                console.error('Aucun code ou appointmentId disponible');
+                // Fallback - retourner à l'accueil
+                router.push(ROUTES.HOME);
+            }
         } catch (error) {
             console.error('Erreur lors de la lecture de la carte vitale:', error);
         } finally {
@@ -41,14 +64,29 @@ export default function CheckinCarteVitaleScreen() {
     };
 
     const handleNoCarte = () => {
-        // Déclencher l'événement d'activité
         triggerActivity();
 
         // Si pas de carte, aller directement à la vérification
-        router.push({
-            pathname: ROUTES.VERIFICATION,
-            params: { code }
-        });
+        if (isFromPersonalSearch && appointmentId) {
+            // Si on vient de la recherche personnelle, utiliser l'appointmentId
+            router.push({
+                pathname: ROUTES.VERIFICATION,
+                params: {
+                    appointmentId: appointmentId,
+                    fromPersonalSearch: 'true'
+                }
+            });
+        } else if (code) {
+            // Si on vient du flux traditionnel avec code
+            router.push({
+                pathname: ROUTES.VERIFICATION,
+                params: { code }
+            });
+        } else {
+            console.error('Aucun code ou appointmentId disponible');
+            // Fallback - retourner à l'accueil
+            router.push(ROUTES.HOME);
+        }
     };
 
     return (
@@ -64,8 +102,8 @@ export default function CheckinCarteVitaleScreen() {
             {/* Image de la carte Vitale et du lecteur */}
             <TouchableOpacity
                 onPress={handleCarteVitale}
-                onPressIn={triggerActivity} // Ajout de l'événement onPressIn
-                onPressOut={triggerActivity} // Ajout de l'événement onPressOut
+                onPressIn={triggerActivity}
+                onPressOut={triggerActivity}
                 activeOpacity={0.8}
                 className="mb-16 items-center justify-center"
                 disabled={loading}

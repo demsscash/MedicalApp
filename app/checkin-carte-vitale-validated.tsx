@@ -9,27 +9,70 @@ import { ROUTES } from '../constants/routes';
 
 export default function CheckinCarteVitaleValidatedScreen() {
     const router = useRouter();
-    const { code } = useLocalSearchParams();
+    const { code, appointmentId, fromPersonalSearch } = useLocalSearchParams();
+
+    // Vérifier d'où vient l'utilisateur
+    const isFromPersonalSearch = fromPersonalSearch === 'true';
+
+    useEffect(() => {
+        console.log('CheckinCarteVitaleValidated - Paramètres reçus:', {
+            code,
+            appointmentId,
+            fromPersonalSearch: isFromPersonalSearch
+        });
+    }, [code, appointmentId, isFromPersonalSearch]);
 
     // Redirection automatique après un délai
     useEffect(() => {
         const timer = setTimeout(() => {
             // Après le délai, naviguer vers la vérification
+            if (isFromPersonalSearch && appointmentId) {
+                // Si on vient de la recherche personnelle, utiliser l'appointmentId
+                router.push({
+                    pathname: ROUTES.VERIFICATION,
+                    params: {
+                        appointmentId: appointmentId,
+                        fromPersonalSearch: 'true'
+                    }
+                });
+            } else if (code) {
+                // Si on vient du flux traditionnel avec code
+                router.push({
+                    pathname: ROUTES.VERIFICATION,
+                    params: { code }
+                });
+            } else {
+                console.error('Aucun code ou appointmentId disponible');
+                // Fallback - retourner à l'accueil
+                router.push(ROUTES.HOME);
+            }
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [code, appointmentId, isFromPersonalSearch, router]);
+
+    const handleNext = () => {
+        // Si l'utilisateur clique sur Suivant, on va directement à la vérification
+        if (isFromPersonalSearch && appointmentId) {
+            // Si on vient de la recherche personnelle, utiliser l'appointmentId
+            router.push({
+                pathname: ROUTES.VERIFICATION,
+                params: {
+                    appointmentId: appointmentId,
+                    fromPersonalSearch: 'true'
+                }
+            });
+        } else if (code) {
+            // Si on vient du flux traditionnel avec code
             router.push({
                 pathname: ROUTES.VERIFICATION,
                 params: { code }
             });
-        }, 3000);
-
-        return () => clearTimeout(timer);
-    }, [code, router]);
-
-    const handleNext = () => {
-        // Si l'utilisateur clique sur Suivant, on va directement à la vérification
-        router.push({
-            pathname: ROUTES.VERIFICATION,
-            params: { code }
-        });
+        } else {
+            console.error('Aucun code ou appointmentId disponible');
+            // Fallback - retourner à l'accueil
+            router.push(ROUTES.HOME);
+        }
     };
 
     return (

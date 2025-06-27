@@ -5,6 +5,51 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
+// Nouvelles interfaces pour la recherche personnelle
+export interface PersonalSearchData {
+    nom: string;
+    prenom: string;
+    date_naissance: string; // Format ISO: YYYY-MM-DD
+}
+
+export interface ApiAppointmentResponse {
+    id: number;
+    appointmentDate: string;
+    validationCode: string;
+    status: string;
+    patient: {
+        id: number;
+        nom: string;
+        prenom: string;
+        telephone: string | null;
+        date_naissance: string;
+        num_sec_social: string | null;
+        zip_code: string | null;
+        fullName: string;
+    };
+    price: number | null;
+    couverture: number | null;
+    total: number | null;
+    time: string;
+    title: string;
+    medecin: {
+        id: number;
+        nom: string;
+        prenom: string;
+        telephone: string;
+        specialite: string;
+    };
+    centre: {
+        id: number;
+        adresse: string;
+        telephone: string;
+        clinic: {
+            name: string;
+        };
+    };
+    regime_obligatoire: number | null;
+}
+
 // Configuration de l'API
 const API_CONFIG = {
     baseUrl: 'https://borne.techfawn.fr/api',
@@ -16,6 +61,7 @@ const API_CONFIG = {
     endpoints: {
         VALIDATE_CODE: '/kiosk/validate',
         GET_APPOINTMENT: '/kiosk/appointment',
+        PERSONAL_SEARCH: '/kiosk/check', // NOUVEAU ENDPOINT
         ROOM_PROGRAMMING: '/kiosk/programmation-salle/appointment',
         INVOICE_PDF: '/kiosk/invoices',
         PRESCRIPTION_PDF: '/kiosk/prescriptions'
@@ -122,6 +168,208 @@ export const ApiService = {
             const isValid = VALID_CODES.includes(code);
             console.log("Validation de secours:", isValid);
             return isValid;
+        }
+    },
+
+    /**
+     * NOUVELLE MÉTHODE: Recherche un rendez-vous par informations personnelles
+     */
+    async searchAppointmentByPersonalInfo(searchData: PersonalSearchData): Promise<PatientInfo | null> {
+        console.log("Recherche de rendez-vous par informations personnelles:", searchData);
+
+        try {
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.PERSONAL_SEARCH}`;
+            console.log(`Appel API recherche personnelle: ${url}`);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'POST',
+                headers: API_CONFIG.headers,
+                body: JSON.stringify(searchData),
+            });
+
+            if (response.status === 404) {
+                console.log("Aucun rendez-vous trouvé (404)");
+                return null;
+            }
+
+            const appointmentData: ApiAppointmentResponse = await response.json();
+            console.log("Réponse de l'API recherche personnelle:", appointmentData);
+
+            if (!appointmentData || !appointmentData.id) {
+                console.log("Aucune donnée valide reçue de l'API");
+                return null;
+            }
+
+            // Formater la date et l'heure
+            let dateStr = "01/01/2025";
+            let timeStr = "00:00";
+
+            if (appointmentData.appointmentDate) {
+                try {
+                    const date = new Date(appointmentData.appointmentDate);
+                    dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+                    timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                } catch (e) {
+                    console.error("Erreur lors du formatage de la date:", e);
+                }
+            }
+
+            // Formater le numéro de sécurité sociale
+            let numeroSecu = "";
+            if (appointmentData.patient.num_sec_social) {
+                numeroSecu = appointmentData.patient.num_sec_social;
+            } else if (appointmentData.patient.telephone) {
+                const tel = appointmentData.patient.telephone.padEnd(15, '0');
+                numeroSecu = `${tel.substring(0, 1)} ${tel.substring(1, 3)} ${tel.substring(3, 5)} ${tel.substring(5, 7)} ${tel.substring(7, 10)} ${tel.substring(10, 13)} ${tel.substring(13, 15)}`;
+            } else {
+                numeroSecu = "0 00 00 00 000 000 00";
+            }
+
+            // Récupérer les informations de salle si possible
+            let salleConsultation = "salle de consultation 04";
+            let salleAttente = "salle d'attente 01";
+            let medecin = `${appointmentData.medecin.nom} ${appointmentData.medecin.prenom}`.trim();
+
+            try {
+                const roomInfo = await this.getRoomInfoByAppointment(appointmentData.id);
+                if (roomInfo) {
+                    salleConsultation = roomInfo.salle.numero;
+                    salleAttente = roomInfo.salle.salleAttentes.length > 0
+                        ? roomInfo.salle.salleAttentes[0].nom
+                        : "salle d'attente 01";
+                    medecin = roomInfo.medecin.nom;
+                }
+            } catch (roomError) {
+                console.warn("Erreur lors de la récupération des informations de salle, utilisation des valeurs par défaut:", roomError);
+            }
+
+            const result: PatientInfo = {
+                id: appointmentData.id,
+                nom: appointmentData.patient.fullName || `${appointmentData.patient.prenom} ${appointmentData.patient.nom}`,
+                dateNaissance: appointmentData.patient.date_naissance ?
+                    new Date(appointmentData.patient.date_naissance).toLocaleDateString('fr-FR') :
+                    "01/01/1990",
+                dateRendezVous: dateStr,
+                heureRendezVous: timeStr,
+                numeroSecu: numeroSecu,
+                verified: true,
+                price: appointmentData.price || 0,
+                couverture: appointmentData.couverture || 0,
+                status: appointmentData.status || "En attente",
+                salleConsultation: salleConsultation,
+                salleAttente: salleAttente,
+                medecin: medecin
+            };
+
+            console.log("Données formatées:", result);
+            return result;
+
+        } catch (error) {
+            console.error('Erreur lors de la recherche par informations personnelles:', error);
+
+            // Pas de fallback pour la recherche personnelle car les données simulées 
+            // ne correspondent pas à des vraies recherches par nom
+            throw error;
+        }
+    },
+
+    /**
+     * NOUVELLE MÉTHODE: Récupère les données de rendez-vous par ID (utilisé après recherche personnelle)
+     */
+    async getAppointmentById(appointmentId: number): Promise<PatientInfo | null> {
+        console.log("Récupération des données du rendez-vous pour l'ID:", appointmentId);
+
+        try {
+            // Construire l'URL pour récupérer par ID
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${appointmentId}`;
+            console.log(`Appel API détails par ID: ${url}`);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'GET',
+                headers: API_CONFIG.headers,
+            });
+
+            const appointmentDetails = await response.json();
+            console.log("Réponse de l'API GET_APPOINTMENT par ID:", appointmentDetails);
+
+            if (!appointmentDetails) {
+                console.log("Aucune donnée reçue de l'API");
+                return null;
+            }
+
+            // Formater la date et l'heure si disponibles
+            let dateStr = "01/01/2025";
+            let timeStr = "00:00";
+
+            if (appointmentDetails.appointmentDate) {
+                try {
+                    const date = new Date(appointmentDetails.appointmentDate);
+                    dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+                    timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                } catch (e) {
+                    console.error("Erreur lors du formatage de la date:", e);
+                }
+            }
+
+            // Récupérer les infos du patient
+            const patientInfo = appointmentDetails.patient || {};
+            const fullName = patientInfo.fullName || `${patientInfo.prenom || ''} ${patientInfo.nom || ''}`;
+
+            // Formater le n° de sécu
+            let numeroSecu = "";
+            if (patientInfo.num_sec_social) {
+                numeroSecu = patientInfo.num_sec_social;
+            } else if (patientInfo.telephone) {
+                const tel = patientInfo.telephone.padEnd(15, '0');
+                numeroSecu = `${tel.substring(0, 1)} ${tel.substring(1, 3)} ${tel.substring(3, 5)} ${tel.substring(5, 7)} ${tel.substring(7, 10)} ${tel.substring(10, 13)} ${tel.substring(13, 15)}`;
+            } else {
+                numeroSecu = "0 00 00 00 000 000 00";
+            }
+
+            // Récupérer les informations de salle
+            let salleConsultation = "salle de consultation 04";
+            let salleAttente = "salle d'attente 01";
+            let medecin = "Dr Martin François";
+
+            if (appointmentDetails.medecin) {
+                medecin = `${appointmentDetails.medecin.nom} ${appointmentDetails.medecin.prenom || ''}`.trim();
+            }
+
+            try {
+                const roomInfo = await this.getRoomInfoByAppointment(appointmentId);
+                if (roomInfo) {
+                    salleConsultation = roomInfo.salle.numero;
+                    salleAttente = roomInfo.salle.salleAttentes.length > 0
+                        ? roomInfo.salle.salleAttentes[0].nom
+                        : "salle d'attente 01";
+                    medecin = roomInfo.medecin.nom;
+                }
+            } catch (roomError) {
+                console.warn("Erreur lors de la récupération des informations de salle, utilisation des valeurs par défaut:", roomError);
+            }
+
+            const result: PatientInfo = {
+                id: appointmentDetails.id || appointmentId,
+                nom: fullName.trim() || "Patient",
+                dateNaissance: patientInfo.date_naissance ? new Date(patientInfo.date_naissance).toLocaleDateString('fr-FR') : "01/01/1990",
+                dateRendezVous: dateStr,
+                heureRendezVous: timeStr,
+                numeroSecu: numeroSecu,
+                verified: true,
+                price: appointmentDetails.price || 0,
+                couverture: appointmentDetails.couverture || 0,
+                status: appointmentDetails.status || "validated",
+                salleConsultation: salleConsultation,
+                salleAttente: salleAttente,
+                medecin: medecin
+            };
+
+            console.log("Données formatées par ID:", result);
+            return result;
+
+        } catch (error) {
+            console.error('Erreur lors de la récupération des détails par ID:', error);
+            throw error;
         }
     },
 

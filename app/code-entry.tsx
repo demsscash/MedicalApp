@@ -46,6 +46,11 @@ export default function CodeValidationScreen() {
         }
     }, [error]);
 
+    // Bouton retour vers le choix de méthode
+    const handleBack = () => {
+        router.push(ROUTES.CHECK_IN_METHOD);
+    };
+
     const handleValidation = async () => {
         const fullCode = getFullCode();
         if (fullCode.length === DEFAULT_CODE_LENGTH) {
@@ -79,7 +84,7 @@ export default function CodeValidationScreen() {
         } else {
             Keyboard.dismiss();
             setErrorTitle('Code incomplet');
-            setErrorMessage('Veuillez saisir un code à 6 chiffres.');
+            setErrorMessage('Veuillez saisir un code à 7 chiffres.');
             setErrorModalVisible(true);
         }
     };
@@ -109,15 +114,25 @@ export default function CodeValidationScreen() {
 
     return (
         <ScreenLayout>
-            <Heading className="mb-4 text-center">
+            {/* Bouton retour */}
+            <View className="w-full mb-6">
+                <Button
+                    title="← Retour"
+                    onPress={handleBack}
+                    variant="secondary"
+                    className="self-start px-4 py-3"
+                />
+            </View>
+
+            <Heading className="mb-3 text-center text-xl">
                 Validation du rendez-vous
             </Heading>
 
-            <Paragraph className="mb-8 text-center px-5">
+            <Paragraph className="mb-6 text-center px-8 text-sm">
                 Pour toute autre information, adressez-vous au secrétariat
             </Paragraph>
 
-            <SubHeading className="mb-6">
+            <SubHeading className="mb-4 text-base">
                 Veuillez entrer votre code
             </SubHeading>
 
@@ -125,7 +140,7 @@ export default function CodeValidationScreen() {
                 codeLength={DEFAULT_CODE_LENGTH}
                 value={code}
                 onChange={handleCodeChange}
-                containerClassName="mb-8"
+                containerClassName="mb-6"
             />
 
             <Button
@@ -133,7 +148,7 @@ export default function CodeValidationScreen() {
                 onPress={handleValidation}
                 variant="primary"
                 disabled={!isComplete}
-                className={`w-64 h-14 justify-center items-center`}
+                className={`w-48 h-12 justify-center items-center`}
             />
 
             {/* Modal d'erreur */}

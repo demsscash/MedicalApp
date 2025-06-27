@@ -37,7 +37,8 @@ export default function HomeScreen() {
       );
       return;
     }
-    router.push(ROUTES.CODE_ENTRY);
+    // Rediriger vers le nouvel écran de choix au lieu de CODE_ENTRY
+    router.push(ROUTES.CHECK_IN_METHOD);
   };
 
   const handlePaiement = () => {

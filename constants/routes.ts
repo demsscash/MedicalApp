@@ -2,7 +2,9 @@
 // Définition des types pour les chemins de routeur
 export type AppRoutes = {
     HOME: '/',
+    CHECK_IN_METHOD: '/check-in-method',
     CODE_ENTRY: '/code-entry',
+    PERSONAL_SEARCH: '/personal-search',
     CHECKIN_CARTE_VITALE: '/checkin-carte-vitale',
     CHECKIN_CARTE_VITALE_VALIDATED: '/checkin-carte-vitale-validated',
     VERIFICATION: '/verification',
@@ -20,7 +22,9 @@ export type AppRoutes = {
 // Les chemins comme valeurs littérales pour satisfaire le typage d'Expo Router
 export const ROUTES: AppRoutes = {
     HOME: '/',
+    CHECK_IN_METHOD: '/check-in-method',
     CODE_ENTRY: '/code-entry',
+    PERSONAL_SEARCH: '/personal-search',
     CHECKIN_CARTE_VITALE: '/checkin-carte-vitale',
     CHECKIN_CARTE_VITALE_VALIDATED: '/checkin-carte-vitale-validated',
     VERIFICATION: '/verification',

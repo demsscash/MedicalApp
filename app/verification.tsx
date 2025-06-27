@@ -13,7 +13,7 @@ import ErrorModal from '../components/ui/ErrorModal';
 
 export default function VerificationScreen() {
     const router = useRouter();
-    const { code } = useLocalSearchParams();
+    const { code, appointmentId, fromPersonalSearch } = useLocalSearchParams();
     const [loading, setLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Vérification en cours...");
     const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
@@ -23,18 +23,33 @@ export default function VerificationScreen() {
     const [errorMessage, setErrorMessage] = useState('');
     const [errorTitle, setErrorTitle] = useState('');
 
+    // Vérifier d'où vient l'utilisateur
+    const isFromPersonalSearch = fromPersonalSearch === 'true';
+
+    useEffect(() => {
+        console.log('Verification - Paramètres reçus:', {
+            code,
+            appointmentId,
+            fromPersonalSearch: isFromPersonalSearch
+        });
+    }, [code, appointmentId, isFromPersonalSearch]);
+
     // Fermeture du modal et redirection
     const handleCloseErrorModal = () => {
         setErrorModalVisible(false);
-        router.push(ROUTES.CODE_ENTRY);
+        if (isFromPersonalSearch) {
+            router.push(ROUTES.PERSONAL_SEARCH);
+        } else {
+            router.push(ROUTES.CODE_ENTRY);
+        }
     };
 
-    // Vérification du code de rendez-vous - Processus en deux étapes
+    // Vérification du rendez-vous - Processus adapté selon le flux
     useEffect(() => {
         const verifyAppointment = async () => {
-            if (!code) {
-                setErrorTitle('Code manquant');
-                setErrorMessage('Aucun code de rendez-vous n\'a été fourni.');
+            if (!code && !appointmentId) {
+                setErrorTitle('Paramètres manquants');
+                setErrorMessage('Aucun code de rendez-vous ou ID n\'a été fourni.');
                 setErrorModalVisible(true);
                 setLoading(false);
                 return;
@@ -42,11 +57,21 @@ export default function VerificationScreen() {
 
             try {
                 setLoadingMessage("Récupération des informations...");
-                console.log("Récupération des détails du rendez-vous pour le code:", code);
 
-                // Le code a déjà été vérifié, récupérer directement les informations du rendez-vous
-                // Cette méthode récupère maintenant aussi les informations de salle
-                const details = await ApiService.getAppointmentByCode(code as string);
+                let details: PatientInfo | null = null;
+
+                if (isFromPersonalSearch && appointmentId) {
+                    // Si on vient de la recherche personnelle, récupérer par ID
+                    console.log("Récupération des détails par appointmentId:", appointmentId);
+                    details = await ApiService.getAppointmentById(parseInt(appointmentId as string));
+                } else if (code) {
+                    // Si on vient du flux traditionnel, récupérer par code
+                    console.log("Récupération des détails par code:", code);
+                    details = await ApiService.getAppointmentByCode(code as string);
+                } else {
+                    throw new Error('Paramètres insuffisants pour la récupération');
+                }
+
                 console.log("Détails du rendez-vous reçus:", details);
 
                 if (details) {
@@ -65,12 +90,12 @@ export default function VerificationScreen() {
         };
 
         verifyAppointment();
-    }, [code, router]);
+    }, [code, appointmentId, isFromPersonalSearch, router]);
 
-    // Redirection vers la page suivante après vérification réussie avec toutes les informations
+    // Redirection vers la page suivante après vérification réussie
     useEffect(() => {
         if (patientInfo && patientInfo.verified && !loading) {
-            // Timer avant de passer à l'écran suivant (pour que l'utilisateur puisse voir les informations)
+            // Timer avant de passer à l'écran suivant
             const timer = setTimeout(() => {
                 router.push({
                     pathname: ROUTES.APPOINTMENT_CONFIRMED,
@@ -78,7 +103,6 @@ export default function VerificationScreen() {
                         name: patientInfo.nom,
                         price: patientInfo.price?.toString() || '0',
                         couverture: patientInfo.couverture?.toString() || '0',
-                        // Nouvelles informations de salle dynamiques
                         salleConsultation: patientInfo.salleConsultation || '',
                         salleAttente: patientInfo.salleAttente || '',
                         medecin: patientInfo.medecin || ''
@@ -118,41 +142,13 @@ export default function VerificationScreen() {
                         <InfoCard label="Date de rendez-vous" value={patientInfo.dateRendezVous} />
                         <InfoCard label="Heure du rendez-vous" value={patientInfo.heureRendezVous} />
 
-                        {/* Informations de salle (si disponibles) 
-                        {patientInfo.medecin && (
-                            <InfoCard label="Médecin" value={patientInfo.medecin} />
+                        {/* Affichage du flux utilisé pour le debug en mode développement */}
+                        {__DEV__ && (
+                            <InfoCard
+                                label="Flux utilisé"
+                                value={isFromPersonalSearch ? "Recherche personnelle" : "Code de validation"}
+                            />
                         )}
-                        {patientInfo.salleAttente && (
-                            <InfoCard label="Salle d'attente" value={patientInfo.salleAttente} />
-                        )}
-                        {patientInfo.salleConsultation && (
-                            <InfoCard label="Salle de consultation" value={patientInfo.salleConsultation} />
-                        )}*/}
-
-                        {/* Informations financières (optionnelles, commentées par défaut) */}
-                        {/*patientInfo.price !== undefined && (
-                            <Card className="mt-6 mb-2 bg-white rounded-xl p-4 shadow">
-                                <Paragraph className="text-center text-base mb-2 text-gray-600">
-                                    Informations de tarification
-                                </Paragraph>
-                                <View className="flex-row justify-between items-center">
-                                    <Text className="text-base text-gray-600">Prix de la consultation</Text>
-                                    <Text className="text-lg font-medium">{patientInfo.price} €</Text>
-                                </View>
-                                {patientInfo.couverture !== undefined && (
-                                    <View className="flex-row justify-between items-center mt-2">
-                                        <Text className="text-base text-gray-600">Couverture mutuelle</Text>
-                                        <Text className="text-lg font-medium text-green-600">- {patientInfo.couverture} €</Text>
-                                    </View>
-                                )}
-                                {resteToPay !== null && (
-                                    <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                                        <Text className="text-base font-medium text-gray-800">Reste à payer</Text>
-                                        <Text className="text-xl font-bold text-[#4169E1]">{resteToPay} €</Text>
-                                    </View>
-                                )}
-                            </Card>
-                        )*/}
                     </View>
                 )
             )}
