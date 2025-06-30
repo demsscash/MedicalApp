@@ -13,7 +13,7 @@ import ErrorModal from '../components/ui/ErrorModal';
 
 export default function VerificationScreen() {
     const router = useRouter();
-    const { code, appointmentId, fromPersonalSearch } = useLocalSearchParams();
+    const { code } = useLocalSearchParams();
     const [loading, setLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Vérification en cours...");
     const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
@@ -23,33 +23,18 @@ export default function VerificationScreen() {
     const [errorMessage, setErrorMessage] = useState('');
     const [errorTitle, setErrorTitle] = useState('');
 
-    // Vérifier d'où vient l'utilisateur
-    const isFromPersonalSearch = fromPersonalSearch === 'true';
-
-    useEffect(() => {
-        console.log('Verification - Paramètres reçus:', {
-            code,
-            appointmentId,
-            fromPersonalSearch: isFromPersonalSearch
-        });
-    }, [code, appointmentId, isFromPersonalSearch]);
-
     // Fermeture du modal et redirection
     const handleCloseErrorModal = () => {
         setErrorModalVisible(false);
-        if (isFromPersonalSearch) {
-            router.push(ROUTES.PERSONAL_SEARCH);
-        } else {
-            router.push(ROUTES.CODE_ENTRY);
-        }
+        router.push(ROUTES.CODE_ENTRY);
     };
 
-    // Vérification du rendez-vous - Processus adapté selon le flux
+    // Vérification du rendez-vous - Processus standard avec le code
     useEffect(() => {
         const verifyAppointment = async () => {
-            if (!code && !appointmentId) {
-                setErrorTitle('Paramètres manquants');
-                setErrorMessage('Aucun code de rendez-vous ou ID n\'a été fourni.');
+            if (!code) {
+                setErrorTitle('Code manquant');
+                setErrorMessage('Aucun code de rendez-vous n\'a été fourni.');
                 setErrorModalVisible(true);
                 setLoading(false);
                 return;
@@ -57,25 +42,29 @@ export default function VerificationScreen() {
 
             try {
                 setLoadingMessage("Récupération des informations...");
+                console.log("Récupération des détails du rendez-vous pour le code:", code);
 
-                let details: PatientInfo | null = null;
-
-                if (isFromPersonalSearch && appointmentId) {
-                    // Si on vient de la recherche personnelle, récupérer par ID
-                    console.log("Récupération des détails par appointmentId:", appointmentId);
-                    details = await ApiService.getAppointmentById(parseInt(appointmentId as string));
-                } else if (code) {
-                    // Si on vient du flux traditionnel, récupérer par code
-                    console.log("Récupération des détails par code:", code);
-                    details = await ApiService.getAppointmentByCode(code as string);
-                } else {
-                    throw new Error('Paramètres insuffisants pour la récupération');
-                }
-
+                // Le code a déjà été vérifié, récupérer directement les informations du rendez-vous
+                const details = await ApiService.getAppointmentByCode(code as string);
                 console.log("Détails du rendez-vous reçus:", details);
 
                 if (details) {
                     setPatientInfo(details);
+
+                    // Envoyer le patient vers la salle d'attente après avoir récupéré les informations
+                    setLoadingMessage("Envoi vers la salle d'attente...");
+                    try {
+                        const sentToWaitingRoom = await ApiService.sendToWaitingRoom(code as string);
+                        if (sentToWaitingRoom) {
+                            console.log("Patient envoyé avec succès vers la salle d'attente");
+                        } else {
+                            console.warn("Impossible d'envoyer le patient vers la salle d'attente, mais on continue");
+                        }
+                    } catch (waitingRoomError) {
+                        console.warn("Erreur lors de l'envoi vers la salle d'attente:", waitingRoomError);
+                        // On ne fait pas échouer le processus pour cette erreur
+                    }
+
                     setLoading(false);
                 } else {
                     throw new Error('Détails du rendez-vous non disponibles');
@@ -90,7 +79,7 @@ export default function VerificationScreen() {
         };
 
         verifyAppointment();
-    }, [code, appointmentId, isFromPersonalSearch, router]);
+    }, [code, router]);
 
     // Redirection vers la page suivante après vérification réussie
     useEffect(() => {
@@ -136,19 +125,11 @@ export default function VerificationScreen() {
                         </Heading>
 
                         {/* Informations de base du patient */}
-                        <InfoCard label="Nom et prénom" value={patientInfo.nom} />
+                        <InfoCard label="Nom et prénom" value={patientInfo.fullName || patientInfo.nom} />
                         <InfoCard label="Date de naissance" value={patientInfo.dateNaissance} />
                         <InfoCard label="Numéro de sécurité sociale" value={patientInfo.numeroSecu} />
                         <InfoCard label="Date de rendez-vous" value={patientInfo.dateRendezVous} />
                         <InfoCard label="Heure du rendez-vous" value={patientInfo.heureRendezVous} />
-
-                        {/* Affichage du flux utilisé pour le debug en mode développement */}
-                        {__DEV__ && (
-                            <InfoCard
-                                label="Flux utilisé"
-                                value={isFromPersonalSearch ? "Recherche personnelle" : "Code de validation"}
-                            />
-                        )}
                     </View>
                 )
             )}

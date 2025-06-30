@@ -114,42 +114,49 @@ export default function CodeValidationScreen() {
 
     return (
         <ScreenLayout>
-            {/* Bouton retour */}
-            <View className="w-full mb-6">
-                <Button
-                    title="← Retour"
-                    onPress={handleBack}
-                    variant="secondary"
-                    className="self-start px-4 py-3"
-                />
+            <View className="w-full max-w-2xl mx-auto px-4 flex-1 justify-center">
+                {/* Bouton retour */}
+                <View className="w-full mb-4">
+                    <Button
+                        title="← Retour"
+                        onPress={handleBack}
+                        variant="secondary"
+                        className="self-start px-4 py-3"
+                    />
+                </View>
+
+                {/* Contenu principal centré */}
+                <View className="flex-1 justify-center items-center">
+                    {/* Titre */}
+                    <Heading className="mb-3 text-center text-xl">
+                        Validation du rendez-vous
+                    </Heading>
+
+                    <Paragraph className="mb-6 text-center px-4 text-sm">
+                        Pour toute autre information, adressez-vous au secrétariat
+                    </Paragraph>
+
+                    {/* Code d'entrée */}
+                    <SubHeading className="mb-4 text-base">
+                        Veuillez entrer votre code
+                    </SubHeading>
+
+                    <CodeInput
+                        codeLength={DEFAULT_CODE_LENGTH}
+                        value={code}
+                        onChange={handleCodeChange}
+                        containerClassName="mb-8"
+                    />
+
+                    <Button
+                        title="Valider"
+                        onPress={handleValidation}
+                        variant="primary"
+                        disabled={!isComplete}
+                        className="w-80 h-12 justify-center items-center"
+                    />
+                </View>
             </View>
-
-            <Heading className="mb-3 text-center text-xl">
-                Validation du rendez-vous
-            </Heading>
-
-            <Paragraph className="mb-6 text-center px-8 text-sm">
-                Pour toute autre information, adressez-vous au secrétariat
-            </Paragraph>
-
-            <SubHeading className="mb-4 text-base">
-                Veuillez entrer votre code
-            </SubHeading>
-
-            <CodeInput
-                codeLength={DEFAULT_CODE_LENGTH}
-                value={code}
-                onChange={handleCodeChange}
-                containerClassName="mb-6"
-            />
-
-            <Button
-                title="Valider"
-                onPress={handleValidation}
-                variant="primary"
-                disabled={!isComplete}
-                className={`w-48 h-12 justify-center items-center`}
-            />
 
             {/* Modal d'erreur */}
             <ErrorModal

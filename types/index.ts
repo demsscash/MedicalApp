@@ -4,6 +4,7 @@ import { TextInput } from "react-native";
 export type PatientInfo = {
     id?: number; // ID du rendez-vous pour la confirmation
     nom: string;
+    fullName?: string; // NOUVEAU : nom complet (nom + prénom)
     dateNaissance: string;
     dateRendezVous: string;
     heureRendezVous: string;

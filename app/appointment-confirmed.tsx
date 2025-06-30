@@ -31,10 +31,11 @@ export default function AppointmentConfirmedScreen() {
     const resteToPay = Math.max(0, priceValue - couvertureValue);
     const hasFinancialInfo = priceValue > 0;
 
-    // Valeurs par défaut si les paramètres ne sont pas fournis
-    const salleConsultationText = (salleConsultation as string) || "salle de consultation 04";
-    const salleAttenteText = (salleAttente as string) || "salle d'attente 01";
-    const medecinText = (medecin as string) || "Dr Martin François";
+    // Utiliser les données de l'API avec des fallbacks
+    const salleConsultationText = (salleConsultation as string) || "salle de consultation";
+    const salleAttenteText = (salleAttente as string) || "salle d'attente";
+    const medecinText = (medecin as string) || "Votre médecin";
+    const patientName = (name as string) || "Patient";
 
     // 🔒 Bloquer le retour gestuel (iOS) + cacher le header natif si présent
     useLayoutEffect(() => {
@@ -63,12 +64,19 @@ export default function AppointmentConfirmedScreen() {
         <ScreenLayout>
             <View className="items-center w-full max-w-lg">
                 {/* Icône de confirmation */}
-                <View className="flex-row items-center mb-12">
+                <View className="flex-row items-center mb-8">
                     <View className="w-12 h-12 bg-white rounded-full items-center justify-center mr-4">
                         <Ionicons name="checkmark" size={32} color={COLORS.primary} />
                     </View>
                     <Heading>Présence confirmée</Heading>
                 </View>
+
+                {/* Message personnalisé avec le nom du patient */}
+                <Card className="w-full mb-4 bg-white rounded-xl p-4 shadow">
+                    <Text className="text-lg text-center text-gray-800">
+                        Bonjour <Text className="font-semibold text-[#4169E1]">{patientName}</Text>
+                    </Text>
+                </Card>
 
                 {/* Cartes d'information */}
                 <CenteredCard text="Rendez-vous validé" className="w-full mb-4" />
@@ -79,28 +87,30 @@ export default function AppointmentConfirmedScreen() {
                     <Text className="text-base text-gray-800 text-center mb-2">
                         Votre consultation se déroulera avec
                     </Text>
-                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-3">
+                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-4">
                         {medecinText}
                     </Text>
 
-                    <Text className="text-base text-gray-800 text-center mb-1">
-                        Veuillez patienter en
-                    </Text>
-                    <Text className="text-xl font-semibold text-[#4169E1] text-center mb-3">
-                        {salleAttenteText}
-                    </Text>
+                    <View className="border-t border-gray-200 pt-4">
+                        <Text className="text-base text-gray-800 text-center mb-1">
+                            Veuillez patienter en
+                        </Text>
+                        <Text className="text-lg font-semibold text-[#4169E1] text-center mb-3">
+                            {salleAttenteText}
+                        </Text>
 
-                    <Text className="text-base text-gray-800 text-center mb-1">
-                        Puis rendez-vous en
-                    </Text>
-                    <Text className="text-xl font-semibold text-[#4169E1] text-center">
-                        {salleConsultationText}
-                    </Text>
+                        <Text className="text-base text-gray-800 text-center mb-1">
+                            Puis rendez-vous en
+                        </Text>
+                        <Text className="text-lg font-semibold text-[#4169E1] text-center">
+                            {salleConsultationText}
+                        </Text>
+                    </View>
                 </Card>
 
-                {/* Informations financières si disponibles (optionnelles, commentées par défaut) */}
-                {/*hasFinancialInfo && (
-                    <Card className="w-full mb-12 bg-white rounded-xl p-5 shadow">
+                {/* Informations financières si disponibles */}
+                {hasFinancialInfo && (
+                    <Card className="w-full mb-8 bg-white rounded-xl p-5 shadow">
                         <SubHeading className="text-center mb-4">Informations de tarification</SubHeading>
 
                         <View className="flex-row justify-between items-center mb-2">
@@ -118,7 +128,7 @@ export default function AppointmentConfirmedScreen() {
                             <Text className="text-xl font-bold text-[#4169E1]">{resteToPay} €</Text>
                         </View>
                     </Card>
-                )*/}
+                )}
 
                 {/* Bouton de retour */}
                 <Button

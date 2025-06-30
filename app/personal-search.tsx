@@ -113,15 +113,18 @@ export default function PersonalSearchScreen() {
 
             const appointmentData = await ApiService.searchAppointmentByPersonalInfo(searchData);
 
-            if (appointmentData) {
-                console.log('Rendez-vous trouvé:', appointmentData);
+            if (appointmentData && appointmentData.validationCode) {
+                console.log('Rendez-vous trouvé avec code de validation:', appointmentData.validationCode);
 
-                // Naviguer vers l'écran de carte Vitale avec les données du rendez-vous
+                // Récupérer le code de validation et continuer avec le flux normal
+                const validationCode = appointmentData.validationCode;
+
+                // Naviguer vers l'écran de carte Vitale avec le code de validation récupéré
+                // On utilise le flux normal (comme si on avait saisi le code)
                 router.push({
                     pathname: ROUTES.CHECKIN_CARTE_VITALE,
                     params: {
-                        appointmentId: appointmentData.id.toString(),
-                        fromPersonalSearch: 'true'
+                        code: validationCode
                     }
                 });
             } else {

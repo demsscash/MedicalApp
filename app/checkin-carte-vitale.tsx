@@ -1,5 +1,5 @@
 // app/checkin-carte-vitale.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
@@ -12,20 +12,9 @@ import { useActivity } from '../components/layout/ActivityWrapper';
 
 export default function CheckinCarteVitaleScreen() {
     const router = useRouter();
-    const { code, appointmentId, fromPersonalSearch } = useLocalSearchParams();
+    const { code } = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const { triggerActivity } = useActivity();
-
-    // Vérifier d'où vient l'utilisateur pour ajuster le comportement
-    const isFromPersonalSearch = fromPersonalSearch === 'true';
-
-    useEffect(() => {
-        console.log('CheckinCarteVitale - Paramètres reçus:', {
-            code,
-            appointmentId,
-            fromPersonalSearch: isFromPersonalSearch
-        });
-    }, [code, appointmentId, isFromPersonalSearch]);
 
     const handleCarteVitale = async () => {
         triggerActivity();
@@ -36,26 +25,10 @@ export default function CheckinCarteVitaleScreen() {
             await readHealthCard();
 
             // Naviguer vers l'écran de carte Vitale validée du check-in
-            if (isFromPersonalSearch && appointmentId) {
-                // Si on vient de la recherche personnelle, utiliser l'appointmentId
-                router.push({
-                    pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
-                    params: {
-                        appointmentId: appointmentId,
-                        fromPersonalSearch: 'true'
-                    }
-                });
-            } else if (code) {
-                // Si on vient du flux traditionnel avec code
-                router.push({
-                    pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
-                    params: { code }
-                });
-            } else {
-                console.error('Aucun code ou appointmentId disponible');
-                // Fallback - retourner à l'accueil
-                router.push(ROUTES.HOME);
-            }
+            router.push({
+                pathname: ROUTES.CHECKIN_CARTE_VITALE_VALIDATED,
+                params: { code }
+            });
         } catch (error) {
             console.error('Erreur lors de la lecture de la carte vitale:', error);
         } finally {
@@ -67,26 +40,10 @@ export default function CheckinCarteVitaleScreen() {
         triggerActivity();
 
         // Si pas de carte, aller directement à la vérification
-        if (isFromPersonalSearch && appointmentId) {
-            // Si on vient de la recherche personnelle, utiliser l'appointmentId
-            router.push({
-                pathname: ROUTES.VERIFICATION,
-                params: {
-                    appointmentId: appointmentId,
-                    fromPersonalSearch: 'true'
-                }
-            });
-        } else if (code) {
-            // Si on vient du flux traditionnel avec code
-            router.push({
-                pathname: ROUTES.VERIFICATION,
-                params: { code }
-            });
-        } else {
-            console.error('Aucun code ou appointmentId disponible');
-            // Fallback - retourner à l'accueil
-            router.push(ROUTES.HOME);
-        }
+        router.push({
+            pathname: ROUTES.VERIFICATION,
+            params: { code }
+        });
     };
 
     return (

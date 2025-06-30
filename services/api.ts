@@ -64,7 +64,8 @@ const API_CONFIG = {
         PERSONAL_SEARCH: '/kiosk/check', // NOUVEAU ENDPOINT
         ROOM_PROGRAMMING: '/kiosk/programmation-salle/appointment',
         INVOICE_PDF: '/kiosk/invoices',
-        PRESCRIPTION_PDF: '/kiosk/prescriptions'
+        PRESCRIPTION_PDF: '/kiosk/prescriptions',
+        SEND_TO_WAITING_ROOM: '/kiosk/send-salle-attente'
     }
 };
 
@@ -173,8 +174,9 @@ export const ApiService = {
 
     /**
      * NOUVELLE MÉTHODE: Recherche un rendez-vous par informations personnelles
+     * Retourne le validationCode pour continuer avec le flux normal
      */
-    async searchAppointmentByPersonalInfo(searchData: PersonalSearchData): Promise<PatientInfo | null> {
+    async searchAppointmentByPersonalInfo(searchData: PersonalSearchData): Promise<{ validationCode: string } | null> {
         console.log("Recherche de rendez-vous par informations personnelles:", searchData);
 
         try {
@@ -195,74 +197,15 @@ export const ApiService = {
             const appointmentData: ApiAppointmentResponse = await response.json();
             console.log("Réponse de l'API recherche personnelle:", appointmentData);
 
-            if (!appointmentData || !appointmentData.id) {
-                console.log("Aucune donnée valide reçue de l'API");
+            if (!appointmentData || !appointmentData.validationCode) {
+                console.log("Aucun code de validation reçu de l'API");
                 return null;
             }
 
-            // Formater la date et l'heure
-            let dateStr = "01/01/2025";
-            let timeStr = "00:00";
-
-            if (appointmentData.appointmentDate) {
-                try {
-                    const date = new Date(appointmentData.appointmentDate);
-                    dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-                    timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                } catch (e) {
-                    console.error("Erreur lors du formatage de la date:", e);
-                }
-            }
-
-            // Formater le numéro de sécurité sociale
-            let numeroSecu = "";
-            if (appointmentData.patient.num_sec_social) {
-                numeroSecu = appointmentData.patient.num_sec_social;
-            } else if (appointmentData.patient.telephone) {
-                const tel = appointmentData.patient.telephone.padEnd(15, '0');
-                numeroSecu = `${tel.substring(0, 1)} ${tel.substring(1, 3)} ${tel.substring(3, 5)} ${tel.substring(5, 7)} ${tel.substring(7, 10)} ${tel.substring(10, 13)} ${tel.substring(13, 15)}`;
-            } else {
-                numeroSecu = "0 00 00 00 000 000 00";
-            }
-
-            // Récupérer les informations de salle si possible
-            let salleConsultation = "salle de consultation 04";
-            let salleAttente = "salle d'attente 01";
-            let medecin = `${appointmentData.medecin.nom} ${appointmentData.medecin.prenom}`.trim();
-
-            try {
-                const roomInfo = await this.getRoomInfoByAppointment(appointmentData.id);
-                if (roomInfo) {
-                    salleConsultation = roomInfo.salle.numero;
-                    salleAttente = roomInfo.salle.salleAttentes.length > 0
-                        ? roomInfo.salle.salleAttentes[0].nom
-                        : "salle d'attente 01";
-                    medecin = roomInfo.medecin.nom;
-                }
-            } catch (roomError) {
-                console.warn("Erreur lors de la récupération des informations de salle, utilisation des valeurs par défaut:", roomError);
-            }
-
-            const result: PatientInfo = {
-                id: appointmentData.id,
-                nom: appointmentData.patient.fullName || `${appointmentData.patient.prenom} ${appointmentData.patient.nom}`,
-                dateNaissance: appointmentData.patient.date_naissance ?
-                    new Date(appointmentData.patient.date_naissance).toLocaleDateString('fr-FR') :
-                    "01/01/1990",
-                dateRendezVous: dateStr,
-                heureRendezVous: timeStr,
-                numeroSecu: numeroSecu,
-                verified: true,
-                price: appointmentData.price || 0,
-                couverture: appointmentData.couverture || 0,
-                status: appointmentData.status || "En attente",
-                salleConsultation: salleConsultation,
-                salleAttente: salleAttente,
-                medecin: medecin
+            // Retourner uniquement le code de validation pour continuer avec le flux normal
+            return {
+                validationCode: appointmentData.validationCode
             };
-
-            console.log("Données formatées:", result);
-            return result;
 
         } catch (error) {
             console.error('Erreur lors de la recherche par informations personnelles:', error);
@@ -274,102 +217,42 @@ export const ApiService = {
     },
 
     /**
-     * NOUVELLE MÉTHODE: Récupère les données de rendez-vous par ID (utilisé après recherche personnelle)
+     * NOUVELLE MÉTHODE: Envoie le patient vers la salle d'attente
      */
-    async getAppointmentById(appointmentId: number): Promise<PatientInfo | null> {
-        console.log("Récupération des données du rendez-vous pour l'ID:", appointmentId);
+    async sendToWaitingRoom(code: string): Promise<boolean> {
+        console.log("Envoi du patient vers la salle d'attente pour le code:", code);
 
         try {
-            // Construire l'URL pour récupérer par ID
-            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.GET_APPOINTMENT}/${appointmentId}`;
-            console.log(`Appel API détails par ID: ${url}`);
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.SEND_TO_WAITING_ROOM}/${code}`;
+            console.log(`Appel API envoi salle d'attente: ${url}`);
 
             const response = await fetchWithTimeout(url, {
-                method: 'GET',
+                method: 'PUT',
                 headers: API_CONFIG.headers,
             });
 
-            const appointmentDetails = await response.json();
-            console.log("Réponse de l'API GET_APPOINTMENT par ID:", appointmentDetails);
-
-            if (!appointmentDetails) {
-                console.log("Aucune donnée reçue de l'API");
-                return null;
+            if (response.status === 404) {
+                console.log("Rendez-vous non trouvé (404)");
+                return false;
             }
 
-            // Formater la date et l'heure si disponibles
-            let dateStr = "01/01/2025";
-            let timeStr = "00:00";
-
-            if (appointmentDetails.appointmentDate) {
-                try {
-                    const date = new Date(appointmentDetails.appointmentDate);
-                    dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-                    timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-                } catch (e) {
-                    console.error("Erreur lors du formatage de la date:", e);
-                }
+            if (response.status === 500) {
+                console.log("Erreur lors de l'appel vers l'API agenda (500)");
+                return false;
             }
 
-            // Récupérer les infos du patient
-            const patientInfo = appointmentDetails.patient || {};
-            const fullName = patientInfo.fullName || `${patientInfo.prenom || ''} ${patientInfo.nom || ''}`;
-
-            // Formater le n° de sécu
-            let numeroSecu = "";
-            if (patientInfo.num_sec_social) {
-                numeroSecu = patientInfo.num_sec_social;
-            } else if (patientInfo.telephone) {
-                const tel = patientInfo.telephone.padEnd(15, '0');
-                numeroSecu = `${tel.substring(0, 1)} ${tel.substring(1, 3)} ${tel.substring(3, 5)} ${tel.substring(5, 7)} ${tel.substring(7, 10)} ${tel.substring(10, 13)} ${tel.substring(13, 15)}`;
-            } else {
-                numeroSecu = "0 00 00 00 000 000 00";
+            if (response.status === 200) {
+                console.log("Patient envoyé avec succès vers la salle d'attente");
+                return true;
             }
 
-            // Récupérer les informations de salle
-            let salleConsultation = "salle de consultation 04";
-            let salleAttente = "salle d'attente 01";
-            let medecin = "Dr Martin François";
-
-            if (appointmentDetails.medecin) {
-                medecin = `${appointmentDetails.medecin.nom} ${appointmentDetails.medecin.prenom || ''}`.trim();
-            }
-
-            try {
-                const roomInfo = await this.getRoomInfoByAppointment(appointmentId);
-                if (roomInfo) {
-                    salleConsultation = roomInfo.salle.numero;
-                    salleAttente = roomInfo.salle.salleAttentes.length > 0
-                        ? roomInfo.salle.salleAttentes[0].nom
-                        : "salle d'attente 01";
-                    medecin = roomInfo.medecin.nom;
-                }
-            } catch (roomError) {
-                console.warn("Erreur lors de la récupération des informations de salle, utilisation des valeurs par défaut:", roomError);
-            }
-
-            const result: PatientInfo = {
-                id: appointmentDetails.id || appointmentId,
-                nom: fullName.trim() || "Patient",
-                dateNaissance: patientInfo.date_naissance ? new Date(patientInfo.date_naissance).toLocaleDateString('fr-FR') : "01/01/1990",
-                dateRendezVous: dateStr,
-                heureRendezVous: timeStr,
-                numeroSecu: numeroSecu,
-                verified: true,
-                price: appointmentDetails.price || 0,
-                couverture: appointmentDetails.couverture || 0,
-                status: appointmentDetails.status || "validated",
-                salleConsultation: salleConsultation,
-                salleAttente: salleAttente,
-                medecin: medecin
-            };
-
-            console.log("Données formatées par ID:", result);
-            return result;
+            return false;
 
         } catch (error) {
-            console.error('Erreur lors de la récupération des détails par ID:', error);
-            throw error;
+            console.error('Erreur lors de l\'envoi vers la salle d\'attente:', error);
+            // Ne pas faire échouer tout le processus si cet appel échoue
+            // C'est un appel "nice to have" pour l'agenda externe
+            return false;
         }
     },
 
@@ -463,7 +346,26 @@ export const ApiService = {
 
                 // Récupérer les infos du patient
                 const patientInfo = appointmentDetails.patient || {};
-                const fullName = patientInfo.fullName || `${patientInfo.prenom || ''} ${patientInfo.nom || ''}`;
+
+                // Construire le nom complet : "NOM Prénom"
+                let fullName = "";
+                if (patientInfo.fullName) {
+                    // Si fullName existe, l'utiliser directement
+                    fullName = patientInfo.fullName;
+                } else {
+                    // Sinon, construire à partir de nom et prénom
+                    const nom = patientInfo.nom || "";
+                    const prenom = patientInfo.prenom || "";
+                    if (nom && prenom) {
+                        fullName = `${nom} ${prenom}`;
+                    } else if (nom) {
+                        fullName = nom;
+                    } else if (prenom) {
+                        fullName = prenom;
+                    } else {
+                        fullName = "Patient";
+                    }
+                }
 
                 // Formater le n° de sécu à partir du téléphone si disponible
                 let numeroSecu = "";
@@ -497,7 +399,8 @@ export const ApiService = {
 
                 const result: PatientInfo = {
                     id: appointmentDetails.id,
-                    nom: fullName.trim() || "Patient",
+                    nom: fullName.trim(),
+                    fullName: fullName.trim(), // NOUVEAU : ajouter fullName
                     dateNaissance: patientInfo.date_naissance ? new Date(patientInfo.date_naissance).toLocaleDateString('fr-FR') : "01/01/1990",
                     dateRendezVous: dateStr,
                     heureRendezVous: timeStr,
@@ -525,6 +428,7 @@ export const ApiService = {
                     // Ajouter les champs manquants
                     return {
                         ...mockData,
+                        nom: mockData.nom, // Garde le nom tel quel des mock data
                         price: mockData.price || 49,
                         couverture: mockData.couverture || 10,
                         status: "validated",
@@ -548,6 +452,7 @@ export const ApiService = {
 
                 return {
                     ...mockData,
+                    nom: mockData.nom, // Garde le nom tel quel des mock data
                     price: mockData.price || 49,
                     couverture: mockData.couverture || 10,
                     status: "validated",
