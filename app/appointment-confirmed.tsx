@@ -32,10 +32,14 @@ export default function AppointmentConfirmedScreen() {
     const hasFinancialInfo = priceValue > 0;
 
     // Utiliser les données de l'API avec des fallbacks
-    const salleConsultationText = (salleConsultation as string) || "salle de consultation";
-    const salleAttenteText = (salleAttente as string) || "salle d'attente";
+    const salleConsultationText = (salleConsultation as string) || "Veuillez vous référer au secrétariat pour connaître votre salle";
+    const salleAttenteText = (salleAttente as string) || "Veuillez vous référer au secrétariat pour connaître votre salle";
     const medecinText = (medecin as string) || "Votre médecin";
     const patientName = (name as string) || "Patient";
+
+    // Vérifier si c'est le message du secrétariat
+    const isSecretariatMessage = salleConsultationText.includes("Veuillez vous référer au secrétariat") ||
+        salleAttenteText.includes("Veuillez vous référer au secrétariat");
 
     // 🔒 Bloquer le retour gestuel (iOS) + cacher le header natif si présent
     useLayoutEffect(() => {
@@ -92,19 +96,37 @@ export default function AppointmentConfirmedScreen() {
                     </Text>
 
                     <View className="border-t border-gray-200 pt-4">
-                        <Text className="text-base text-gray-800 text-center mb-1">
-                            Veuillez patienter en
-                        </Text>
-                        <Text className="text-lg font-semibold text-[#4169E1] text-center mb-3">
-                            {salleAttenteText}
-                        </Text>
+                        {isSecretariatMessage ? (
+                            // Affichage spécial pour le message du secrétariat
+                            <View className="items-center">
+                                <View className="w-8 h-8 bg-orange-100 rounded-full items-center justify-center mb-3">
+                                    <Ionicons name="information" size={20} color="#F59E0B" />
+                                </View>
+                                <Text className="text-lg font-semibold text-orange-600 text-center mb-2">
+                                    Information importante
+                                </Text>
+                                <Text className="text-base text-gray-800 text-center leading-6">
+                                    Veuillez vous référer au secrétariat pour connaître votre salle de consultation et salle d'attente
+                                </Text>
+                            </View>
+                        ) : (
+                            // Affichage normal avec les salles spécifiques
+                            <>
+                                <Text className="text-base text-gray-800 text-center mb-1">
+                                    Veuillez patienter en
+                                </Text>
+                                <Text className="text-lg font-semibold text-[#4169E1] text-center mb-3">
+                                    {salleAttenteText}
+                                </Text>
 
-                        <Text className="text-base text-gray-800 text-center mb-1">
-                            Puis rendez-vous en
-                        </Text>
-                        <Text className="text-lg font-semibold text-[#4169E1] text-center">
-                            {salleConsultationText}
-                        </Text>
+                                <Text className="text-base text-gray-800 text-center mb-1">
+                                    Puis rendez-vous en
+                                </Text>
+                                <Text className="text-lg font-semibold text-[#4169E1] text-center">
+                                    {salleConsultationText}
+                                </Text>
+                            </>
+                        )}
                     </View>
                 </Card>
 

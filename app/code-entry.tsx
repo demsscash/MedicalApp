@@ -148,12 +148,13 @@ export default function CodeValidationScreen() {
                         containerClassName="mb-8"
                     />
 
+
                     <Button
                         title="Valider"
                         onPress={handleValidation}
                         variant="primary"
                         disabled={!isComplete}
-                        className="w-80 h-12 justify-center items-center"
+                        className={`w-64 h-14 justify-center items-center`}
                     />
                 </View>
             </View>

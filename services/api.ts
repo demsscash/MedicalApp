@@ -38,7 +38,11 @@ export interface ApiAppointmentResponse {
         prenom: string;
         telephone: string;
         specialite: string;
-    };
+    } | null;
+    personnel_medecin: {
+        id: number;
+        nom: string;
+    } | null;
     centre: {
         id: number;
         adresse: string;
@@ -271,6 +275,12 @@ export const ApiService = {
                 headers: API_CONFIG.headers,
             });
 
+            // Vérifier spécifiquement le statut 404 pour les salles
+            if (response.status === 404) {
+                console.log("Aucune information de salle trouvée (404) - l'utilisateur devra se référer au secrétariat");
+                return null; // Retourner null pour indiquer qu'aucune salle n'est programmée
+            }
+
             const roomData = await response.json();
             console.log("Réponse de l'API programmation salle:", roomData);
 
@@ -282,25 +292,8 @@ export const ApiService = {
             return null;
         } catch (error) {
             console.error('Erreur lors de la récupération des informations de salle:', error);
-            // Retourner des données par défaut en cas d'erreur
-            return {
-                id: appointmentId,
-                date: new Date().toISOString(),
-                medecin: {
-                    nom: "Dr Martin François",
-                    prenom: null
-                },
-                etat: "Disponible",
-                remarque: "",
-                salle: {
-                    id: 1,
-                    numero: "salle de consultation 04",
-                    salleAttentes: [{
-                        id: 1,
-                        nom: "salle d'attente 01"
-                    }]
-                }
-            };
+            // En cas d'erreur réseau ou autre, retourner null pour déclencher le message du secrétariat
+            return null;
         }
     },
 
@@ -377,23 +370,58 @@ export const ApiService = {
                     numeroSecu = "0 00 00 00 000 000 00";
                 }
 
-                // Récupérer les informations de salle si l'ID du rendez-vous est disponible
-                let salleConsultation = "salle de consultation 04";
-                let salleAttente = "salle d'attente 01";
+                // Récupérer les informations du médecin - CORRECTION ICI
+                let salleConsultation = "Veuillez vous référer au secrétariat pour connaître votre salle";
+                let salleAttente = "Veuillez vous référer au secrétariat pour connaître votre salle";
                 let medecin = "Dr Martin François";
 
+                // D'abord récupérer les informations du médecin depuis la réponse API principale
+                if (appointmentDetails.medecin) {
+                    const medecinInfo = appointmentDetails.medecin;
+
+                    // Construire le nom complet du médecin
+                    if (medecinInfo.nom && medecinInfo.prenom) {
+                        medecin = `${medecinInfo.nom} ${medecinInfo.prenom}`;
+                    } else if (medecinInfo.nom) {
+                        medecin = medecinInfo.nom;
+                    }
+
+                    console.log("Informations médecin récupérées depuis l'API principale (medecin):", medecin);
+                } else if (appointmentDetails.personnel_medecin) {
+                    // Si medecin est null, utiliser personnel_medecin comme fallback
+                    const personnelMedecinInfo = appointmentDetails.personnel_medecin;
+
+                    if (personnelMedecinInfo.nom) {
+                        medecin = personnelMedecinInfo.nom;
+                    }
+
+                    console.log("Informations médecin récupérées depuis l'API principale (personnel_medecin):", medecin);
+                }
+
+                // Ensuite récupérer les informations de salle si l'ID du rendez-vous est disponible
                 if (appointmentDetails.id) {
                     try {
                         const roomInfo = await this.getRoomInfoByAppointment(appointmentDetails.id);
                         if (roomInfo) {
+                            // Si on a des informations de salle, les utiliser
                             salleConsultation = roomInfo.salle.numero;
                             salleAttente = roomInfo.salle.salleAttentes.length > 0
                                 ? roomInfo.salle.salleAttentes[0].nom
-                                : "salle d'attente 01";
-                            medecin = roomInfo.medecin.nom;
+                                : "Veuillez vous référer au secrétariat pour connaître votre salle d'attente";
+
+                            // Ne pas écraser le nom du médecin si on l'a déjà récupéré
+                            // Seulement l'utiliser si on n'a pas eu d'info depuis appointmentDetails (ni medecin ni personnel_medecin)
+                            if (!appointmentDetails.medecin && !appointmentDetails.personnel_medecin && roomInfo.medecin.nom) {
+                                medecin = roomInfo.medecin.nom;
+                                console.log("Informations médecin récupérées depuis l'API de salle:", medecin);
+                            }
+                        } else {
+                            // Si roomInfo est null (404 ou erreur), garder le message du secrétariat
+                            console.log("Aucune information de salle disponible - message du secrétariat affiché");
                         }
                     } catch (roomError) {
-                        console.warn("Erreur lors de la récupération des informations de salle, utilisation des valeurs par défaut:", roomError);
+                        console.warn("Erreur lors de la récupération des informations de salle:", roomError);
+                        // En cas d'erreur, garder le message du secrétariat (pas de changement des valeurs par défaut)
                     }
                 }
 
@@ -415,7 +443,7 @@ export const ApiService = {
                     medecin: medecin
                 };
 
-                console.log("Données formatées avec informations de salle:", result);
+                console.log("Données formatées avec informations complètes:", result);
                 return result;
             } catch (apiError) {
                 console.warn("Erreur API détails, utilisation des données locales:", apiError);
@@ -433,10 +461,10 @@ export const ApiService = {
                         couverture: mockData.couverture || 10,
                         status: "validated",
                         id: parseInt(code),
-                        // Données de salle par défaut pour les tests
-                        salleConsultation: "salle de consultation 04",
-                        salleAttente: "salle d'attente 01",
-                        medecin: "Dr Martin François"
+                        // Message du secrétariat pour les données simulées aussi
+                        salleConsultation: mockData.salleConsultation || "Veuillez vous référer au secrétariat pour connaître votre salle",
+                        salleAttente: mockData.salleAttente || "Veuillez vous référer au secrétariat pour connaître votre salle",
+                        medecin: mockData.medecin || "Dr Martin François"
                     };
                 }
 
@@ -457,10 +485,10 @@ export const ApiService = {
                     couverture: mockData.couverture || 10,
                     status: "validated",
                     id: parseInt(code),
-                    // Données de salle par défaut pour les tests
-                    salleConsultation: "salle de consultation 04",
-                    salleAttente: "salle d'attente 01",
-                    medecin: "Dr Martin François"
+                    // Message du secrétariat pour le fallback final aussi
+                    salleConsultation: mockData.salleConsultation || "Veuillez vous référer au secrétariat pour connaître votre salle",
+                    salleAttente: mockData.salleAttente || "Veuillez vous référer au secrétariat pour connaître votre salle",
+                    medecin: mockData.medecin || "Dr Martin François"
                 };
             }
 
