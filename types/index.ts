@@ -14,8 +14,7 @@ export type PatientInfo = {
     price?: number; // Prix de la consultation
     couverture?: number; // Montant de la couverture mutuelle
     status?: string; // Statut du rendez-vous
-    // Nouvelles propriétés pour les salles dynamiques
-    salleConsultation?: string;
+    // MISE À JOUR : Plus de salleConsultation, seulement salleAttente
     salleAttente?: string;
     medecin?: string;
 };

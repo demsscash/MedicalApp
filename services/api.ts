@@ -300,6 +300,7 @@ export const ApiService = {
     /**
      * Récupère les données de rendez-vous complètes par code avec informations de salle
      */
+    // services/api.ts - Partie mise à jour pour getAppointmentByCode
     async getAppointmentByCode(code: string): Promise<PatientInfo | null> {
         console.log("Récupération des données du rendez-vous pour le code:", code);
 
@@ -370,12 +371,11 @@ export const ApiService = {
                     numeroSecu = "0 00 00 00 000 000 00";
                 }
 
-                // Récupérer les informations du médecin - CORRECTION ICI
-                let salleConsultation = "Veuillez vous référer au secrétariat pour connaître votre salle";
-                let salleAttente = "Veuillez vous référer au secrétariat pour connaître votre salle";
+                // NOUVEAU : Récupérer les informations directement depuis l'appointment
+                let salleAttente = "Veuillez vous référer au secrétariat pour connaître votre salle d'attente";
                 let medecin = "Dr Martin François";
 
-                // D'abord récupérer les informations du médecin depuis la réponse API principale
+                // Récupérer les informations du médecin depuis la réponse API
                 if (appointmentDetails.medecin) {
                     const medecinInfo = appointmentDetails.medecin;
 
@@ -386,7 +386,7 @@ export const ApiService = {
                         medecin = medecinInfo.nom;
                     }
 
-                    console.log("Informations médecin récupérées depuis l'API principale (medecin):", medecin);
+                    console.log("Informations médecin récupérées:", medecin);
                 } else if (appointmentDetails.personnel_medecin) {
                     // Si medecin est null, utiliser personnel_medecin comme fallback
                     const personnelMedecinInfo = appointmentDetails.personnel_medecin;
@@ -395,40 +395,21 @@ export const ApiService = {
                         medecin = personnelMedecinInfo.nom;
                     }
 
-                    console.log("Informations médecin récupérées depuis l'API principale (personnel_medecin):", medecin);
+                    console.log("Informations médecin récupérées (personnel_medecin):", medecin);
                 }
 
-                // Ensuite récupérer les informations de salle si l'ID du rendez-vous est disponible
-                if (appointmentDetails.id) {
-                    try {
-                        const roomInfo = await this.getRoomInfoByAppointment(appointmentDetails.id);
-                        if (roomInfo) {
-                            // Si on a des informations de salle, les utiliser
-                            salleConsultation = roomInfo.salle.numero;
-                            salleAttente = roomInfo.salle.salleAttentes.length > 0
-                                ? roomInfo.salle.salleAttentes[0].nom
-                                : "Veuillez vous référer au secrétariat pour connaître votre salle d'attente";
-
-                            // Ne pas écraser le nom du médecin si on l'a déjà récupéré
-                            // Seulement l'utiliser si on n'a pas eu d'info depuis appointmentDetails (ni medecin ni personnel_medecin)
-                            if (!appointmentDetails.medecin && !appointmentDetails.personnel_medecin && roomInfo.medecin.nom) {
-                                medecin = roomInfo.medecin.nom;
-                                console.log("Informations médecin récupérées depuis l'API de salle:", medecin);
-                            }
-                        } else {
-                            // Si roomInfo est null (404 ou erreur), garder le message du secrétariat
-                            console.log("Aucune information de salle disponible - message du secrétariat affiché");
-                        }
-                    } catch (roomError) {
-                        console.warn("Erreur lors de la récupération des informations de salle:", roomError);
-                        // En cas d'erreur, garder le message du secrétariat (pas de changement des valeurs par défaut)
-                    }
+                // NOUVEAU : Récupérer la salle d'attente directement depuis l'appointment
+                if (appointmentDetails.salle_attente && appointmentDetails.salle_attente.nom) {
+                    salleAttente = appointmentDetails.salle_attente.nom;
+                    console.log("Salle d'attente récupérée depuis l'appointment:", salleAttente);
+                } else {
+                    console.log("Aucune salle d'attente définie - message du secrétariat affiché");
                 }
 
                 const result: PatientInfo = {
                     id: appointmentDetails.id,
                     nom: fullName.trim(),
-                    fullName: fullName.trim(), // NOUVEAU : ajouter fullName
+                    fullName: fullName.trim(),
                     dateNaissance: patientInfo.date_naissance ? new Date(patientInfo.date_naissance).toLocaleDateString('fr-FR') : "01/01/1990",
                     dateRendezVous: dateStr,
                     heureRendezVous: timeStr,
@@ -437,8 +418,7 @@ export const ApiService = {
                     price: appointmentDetails.price || 0,
                     couverture: appointmentDetails.couverture || 0,
                     status: appointmentDetails.status || "validated",
-                    // Nouvelles propriétés dynamiques
-                    salleConsultation: salleConsultation,
+                    // NOUVEAU : Plus de salle de consultation, seulement salle d'attente
                     salleAttente: salleAttente,
                     medecin: medecin
                 };
@@ -456,14 +436,13 @@ export const ApiService = {
                     // Ajouter les champs manquants
                     return {
                         ...mockData,
-                        nom: mockData.nom, // Garde le nom tel quel des mock data
+                        nom: mockData.nom,
                         price: mockData.price || 49,
                         couverture: mockData.couverture || 10,
                         status: "validated",
                         id: parseInt(code),
                         // Message du secrétariat pour les données simulées aussi
-                        salleConsultation: mockData.salleConsultation || "Veuillez vous référer au secrétariat pour connaître votre salle",
-                        salleAttente: mockData.salleAttente || "Veuillez vous référer au secrétariat pour connaître votre salle",
+                        salleAttente: mockData.salleAttente || "Veuillez vous référer au secrétariat pour connaître votre salle d'attente",
                         medecin: mockData.medecin || "Dr Martin François"
                     };
                 }
@@ -480,14 +459,13 @@ export const ApiService = {
 
                 return {
                     ...mockData,
-                    nom: mockData.nom, // Garde le nom tel quel des mock data
+                    nom: mockData.nom,
                     price: mockData.price || 49,
                     couverture: mockData.couverture || 10,
                     status: "validated",
                     id: parseInt(code),
                     // Message du secrétariat pour le fallback final aussi
-                    salleConsultation: mockData.salleConsultation || "Veuillez vous référer au secrétariat pour connaître votre salle",
-                    salleAttente: mockData.salleAttente || "Veuillez vous référer au secrétariat pour connaître votre salle",
+                    salleAttente: mockData.salleAttente || "Veuillez vous référer au secrétariat pour connaître votre salle d'attente",
                     medecin: mockData.medecin || "Dr Martin François"
                 };
             }

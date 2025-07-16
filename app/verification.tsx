@@ -92,7 +92,6 @@ export default function VerificationScreen() {
                         name: patientInfo.nom,
                         price: patientInfo.price?.toString() || '0',
                         couverture: patientInfo.couverture?.toString() || '0',
-                        salleConsultation: patientInfo.salleConsultation || '',
                         salleAttente: patientInfo.salleAttente || '',
                         medecin: patientInfo.medecin || ''
                     }

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import Button from '../components/ui/Button';
-import { Card, CenteredCard, HighlightCard } from '../components/ui/Card';
+import { Card, CenteredCard } from '../components/ui/Card';
 import { Heading, SubHeading } from '../components/ui/Typography';
 import { COLORS } from '../constants/theme';
 import { useAppState } from '../hooks/useAppState';
@@ -20,7 +20,6 @@ export default function AppointmentConfirmedScreen() {
         name,
         price,
         couverture,
-        salleConsultation,
         salleAttente,
         medecin
     } = useLocalSearchParams();
@@ -32,14 +31,12 @@ export default function AppointmentConfirmedScreen() {
     const hasFinancialInfo = priceValue > 0;
 
     // Utiliser les données de l'API avec des fallbacks
-    const salleConsultationText = (salleConsultation as string) || "Veuillez vous référer au secrétariat pour connaître votre salle";
-    const salleAttenteText = (salleAttente as string) || "Veuillez vous référer au secrétariat pour connaître votre salle";
+    const salleAttenteText = (salleAttente as string) || "Veuillez vous référer au secrétariat pour connaître votre salle d'attente";
     const medecinText = (medecin as string) || "Votre médecin";
     const patientName = (name as string) || "Patient";
 
     // Vérifier si c'est le message du secrétariat
-    const isSecretariatMessage = salleConsultationText.includes("Veuillez vous référer au secrétariat") ||
-        salleAttenteText.includes("Veuillez vous référer au secrétariat");
+    const isSecretariatMessage = salleAttenteText.includes("Veuillez vous référer au secrétariat");
 
     // 🔒 Bloquer le retour gestuel (iOS) + cacher le header natif si présent
     useLayoutEffect(() => {
@@ -86,7 +83,7 @@ export default function AppointmentConfirmedScreen() {
                 <CenteredCard text="Rendez-vous validé" className="w-full mb-4" />
                 <CenteredCard text="Secrétaire informée" className="w-full mb-4" />
 
-                {/* Informations dynamiques sur les salles et le médecin */}
+                {/* Informations sur le médecin et la salle d'attente */}
                 <Card className="w-full mb-8 bg-white rounded-xl p-5 shadow">
                     <Text className="text-base text-gray-800 text-center mb-2">
                         Votre consultation se déroulera avec
@@ -106,26 +103,19 @@ export default function AppointmentConfirmedScreen() {
                                     Information importante
                                 </Text>
                                 <Text className="text-base text-gray-800 text-center leading-6">
-                                    Veuillez vous référer au secrétariat pour connaître votre salle de consultation et salle d'attente
+                                    {salleAttenteText}
                                 </Text>
                             </View>
                         ) : (
-                            // Affichage normal avec les salles spécifiques
-                            <>
+                            // Affichage normal avec la salle d'attente spécifique
+                            <View className="items-center">
                                 <Text className="text-base text-gray-800 text-center mb-1">
                                     Veuillez patienter en
                                 </Text>
-                                <Text className="text-lg font-semibold text-[#4169E1] text-center mb-3">
+                                <Text className="text-lg font-semibold text-[#4169E1] text-center">
                                     {salleAttenteText}
                                 </Text>
-
-                                <Text className="text-base text-gray-800 text-center mb-1">
-                                    Puis rendez-vous en
-                                </Text>
-                                <Text className="text-lg font-semibold text-[#4169E1] text-center">
-                                    {salleConsultationText}
-                                </Text>
-                            </>
+                            </View>
                         )}
                     </View>
                 </Card>
