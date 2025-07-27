@@ -57,7 +57,7 @@ export interface ApiAppointmentResponse {
 // Configuration de l'API
 const API_CONFIG = {
     baseUrl: 'https://borne.techfawn.fr/api',
-    timeout: 10000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
