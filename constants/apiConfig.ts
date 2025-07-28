@@ -39,6 +39,7 @@ export const API = {
         PAYMENT_PROCESS: '/payments/process',
         // Nouveau endpoint pour les salles
         ROOM_PROGRAMMING: '/kiosk/programmation-salle/appointment',
+        UPDATE_KIOSK_MAC: '/update-mac'
     },
     // En-têtes communs pour toutes les requêtes
     headers: {

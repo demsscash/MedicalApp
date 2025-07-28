@@ -5,7 +5,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-// Nouvelles interfaces pour la recherche personnelle
+// Interfaces existantes pour la recherche personnelle
 export interface PersonalSearchData {
     nom: string;
     prenom: string;
@@ -54,6 +54,24 @@ export interface ApiAppointmentResponse {
     regime_obligatoire: number | null;
 }
 
+// NOUVELLES INTERFACES pour l'authentification de borne
+export interface KioskAuthRequest {
+    code: string;
+    mac_adresse: string;
+}
+
+export interface KioskAuthResponse {
+    success: boolean;
+    message: string;
+    kiosk?: {
+        id: number;
+        code: string;
+        mac_adresse: string;
+        nom?: string;
+        statut: string;
+    };
+}
+
 // Configuration de l'API
 const API_CONFIG = {
     baseUrl: 'https://borne.techfawn.fr/api',
@@ -65,11 +83,12 @@ const API_CONFIG = {
     endpoints: {
         VALIDATE_CODE: '/kiosk/validate',
         GET_APPOINTMENT: '/kiosk/appointment',
-        PERSONAL_SEARCH: '/kiosk/check', // NOUVEAU ENDPOINT
+        PERSONAL_SEARCH: '/kiosk/check',
         ROOM_PROGRAMMING: '/kiosk/programmation-salle/appointment',
         INVOICE_PDF: '/kiosk/invoices',
         PRESCRIPTION_PDF: '/kiosk/prescriptions',
-        SEND_TO_WAITING_ROOM: '/kiosk/send-salle-attente'
+        SEND_TO_WAITING_ROOM: '/kiosk/send-salle-attente',
+        UPDATE_KIOSK_MAC: '/kiosk/update-mac' // ENDPOINT pour authentification borne
     }
 };
 
@@ -300,7 +319,6 @@ export const ApiService = {
     /**
      * Récupère les données de rendez-vous complètes par code avec informations de salle
      */
-    // services/api.ts - Partie mise à jour pour getAppointmentByCode
     async getAppointmentByCode(code: string): Promise<PatientInfo | null> {
         console.log("Récupération des données du rendez-vous pour le code:", code);
 
@@ -515,6 +533,104 @@ export const ApiService = {
 
             // Si même les données simulées ne sont pas disponibles, retourner null
             // pour garder un comportement cohérent avec getAppointmentByCode
+            return null;
+        }
+    },
+
+    /**
+     * NOUVELLE MÉTHODE: Met à jour l'adresse MAC d'une borne via son code de validation
+     * VERSION MODIFIÉE POUR TESTS API RÉELS
+     */
+    async updateKioskMac(code: string, macAddress: string): Promise<boolean> {
+        console.log("Authentification de la borne avec code:", code, "et MAC:", macAddress);
+
+        try {
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.UPDATE_KIOSK_MAC}`;
+            console.log(`Appel API authentification borne: ${url}`);
+
+            const requestData: KioskAuthRequest = {
+                code: code.trim(),
+                mac_adresse: macAddress.toUpperCase()
+            };
+
+            console.log("Données envoyées à l'API:", requestData);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'PUT',
+                headers: API_CONFIG.headers,
+                body: JSON.stringify(requestData),
+            });
+
+            console.log("Statut de réponse API:", response.status);
+
+            if (response.status === 404) {
+                console.log("Code de borne non trouvé (404)");
+                throw new Error('404: Code de borne invalide');
+            }
+
+            if (response.status === 400) {
+                console.log("Données de requête invalides (400)");
+                throw new Error('400: Données invalides');
+            }
+
+            if (response.status === 200) {
+                console.log("Authentification de la borne réussie");
+
+                // Afficher la réponse complète pour debug
+                try {
+                    const responseData: KioskAuthResponse = await response.json();
+                    console.log("Données de réponse de l'API:", responseData);
+                } catch (parseError) {
+                    console.log("Pas de données JSON dans la réponse, authentification réussie");
+                }
+
+                return true;
+            }
+
+            // Autres codes de statut
+            console.error(`Statut de réponse inattendu: ${response.status}`);
+            const responseText = await response.text();
+            console.error("Contenu de la réponse:", responseText);
+            throw new Error(`Erreur serveur: ${response.status}`);
+
+        } catch (error) {
+            console.error('Erreur lors de l\'authentification de la borne:', error);
+
+            // DÉSACTIVER le fallback TEST123 pour forcer l'utilisation de l'API
+            // Commentez ou supprimez ces lignes pour les tests API réels :
+            /*
+            if (__DEV__ && code.toUpperCase() === 'TEST123') {
+                console.log("Mode développement: authentification simulée réussie");
+                return true;
+            }
+            */
+
+            throw error;
+        }
+    },
+
+    /**
+     * NOUVELLE MÉTHODE: Vérifie le statut d'une borne par son code (optionnel)
+     */
+    async checkKioskStatus(code: string): Promise<KioskAuthResponse | null> {
+        try {
+            const url = `${API_CONFIG.baseUrl}/kiosk/status/${code}`;
+            console.log(`Vérification du statut de la borne: ${url}`);
+
+            const response = await fetchWithTimeout(url, {
+                method: 'GET',
+                headers: API_CONFIG.headers,
+            });
+
+            if (response.status === 404) {
+                return null;
+            }
+
+            const statusData: KioskAuthResponse = await response.json();
+            return statusData;
+
+        } catch (error) {
+            console.error('Erreur lors de la vérification du statut:', error);
             return null;
         }
     },

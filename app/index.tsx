@@ -1,9 +1,10 @@
-// app/index.tsx
+// app/index.tsx - Version mise à jour avec accès admin
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import NetworkError from '../components/ui/NetworkError';
+import AdminPanel, { AdminAccess } from '../components/ui/AdminPanel';
 import { ROUTES } from '../constants/routes';
 import { PressedButtonType } from '../types';
 import useNetworkStatus from '../hooks/useNetworkStatus';
@@ -11,6 +12,7 @@ import useNetworkStatus from '../hooks/useNetworkStatus';
 export default function HomeScreen() {
   const router = useRouter();
   const [pressedButton, setPressedButton] = useState<PressedButtonType>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const { isConnected, isInternetReachable, checkConnection } = useNetworkStatus();
   const [showNetworkError, setShowNetworkError] = useState(false);
 
@@ -50,6 +52,14 @@ export default function HomeScreen() {
       return;
     }
     router.push(ROUTES.PAYMENT);
+  };
+
+  const handleShowAdminPanel = () => {
+    setShowAdminPanel(true);
+  };
+
+  const handleCloseAdminPanel = () => {
+    setShowAdminPanel(false);
   };
 
   return (
@@ -118,6 +128,15 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Bouton d'accès administrateur caché */}
+      <AdminAccess onShowPanel={handleShowAdminPanel} />
+
+      {/* Panneau d'administration */}
+      <AdminPanel
+        visible={showAdminPanel}
+        onClose={handleCloseAdminPanel}
+      />
     </ScreenLayout>
   );
 }

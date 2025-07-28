@@ -1,7 +1,8 @@
-// constants/routes.ts
+// constants/routes.ts - Version mise à jour
 // Définition des types pour les chemins de routeur
 export type AppRoutes = {
     HOME: '/',
+    KIOSK_AUTH: '/kiosk-auth',
     CHECK_IN_METHOD: '/check-in-method',
     CODE_ENTRY: '/code-entry',
     PERSONAL_SEARCH: '/personal-search',
@@ -22,6 +23,7 @@ export type AppRoutes = {
 // Les chemins comme valeurs littérales pour satisfaire le typage d'Expo Router
 export const ROUTES: AppRoutes = {
     HOME: '/',
+    KIOSK_AUTH: '/kiosk-auth',
     CHECK_IN_METHOD: '/check-in-method',
     CODE_ENTRY: '/code-entry',
     PERSONAL_SEARCH: '/personal-search',
