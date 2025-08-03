@@ -233,15 +233,7 @@ export default function KioskAuthScreen({ onAuthSuccess }: KioskAuthScreenProps)
                 </View>
 
                 {/* Informations de debug (seulement en mode développement) */}
-                {__DEV__ && (
-                    <Card className="mt-6 bg-gray-50">
-                        <Text className="text-xs text-gray-500 mb-1">Mode développement</Text>
-                        <Text className="text-xs text-gray-600">
-                            Code test: TEST123{'\n'}
-                            MAC: {macAddress}
-                        </Text>
-                    </Card>
-                )}
+
             </View>
 
             {/* Modal d'erreur */}
